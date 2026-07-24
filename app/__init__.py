@@ -1,0 +1,1 @@
+"""Kshirsagar Group attendance tracking application."""
