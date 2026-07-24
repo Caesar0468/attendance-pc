@@ -1,0 +1,8 @@
+{
+  "port": 8500,
+  "host": "0.0.0.0",
+  "similarity_threshold": 0.5,
+  "uncertain_threshold": 0.35,
+  "photos_per_worker_min": 2,
+  "photos_per_worker_max": 3
+}
