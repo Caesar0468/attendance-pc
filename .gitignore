@@ -1,0 +1,22 @@
+# Python bytecode & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Runtime data & storage directories
+data/
+photos/
+uploads/
+reports/
+
+# Local configuration & IDEs
+config.json
+.vscode/
+.idea/
+*.sqlite3
+*.db

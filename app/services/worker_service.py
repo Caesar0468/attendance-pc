@@ -45,11 +45,13 @@ class WorkerService:
         if self.worker_repo.name_exists(clean_name):
             raise DuplicateWorkerError(detail=f"A worker named '{clean_name}' already exists.")
 
-        if len(photos) < min_photos:
+        valid_photos = [p for p in photos if p.filename]
+
+        if len(valid_photos) < min_photos:
             raise InvalidInputException(
                 detail=f"Please provide at least {min_photos} photos for reliable recognition.",
             )
-        if len(photos) > max_photos:
+        if len(valid_photos) > max_photos:
             raise InvalidInputException(
                 detail=f"Please provide no more than {max_photos} photos per worker.",
             )
@@ -58,7 +60,7 @@ class WorkerService:
         thumbnail_path = None
 
         try:
-            for i, photo in enumerate(photos):
+            for i, photo in enumerate(valid_photos):
                 data = await photo.read()
                 if not data:
                     raise FileProcessingError(detail="One of the photos was empty. Please try again.")
@@ -131,14 +133,15 @@ class WorkerService:
         old_thumbnail_path = worker["thumbnail_path"]
         thumbnail_path = old_thumbnail_path
 
-        if photos:
+        valid_photos = [p for p in photos if p.filename]
+
+        if valid_photos:
             config = load_config()
             max_photos = config["photos_per_worker_max"]
-            valid_photos = [p for p in photos if p.filename]
 
-            if len(valid_photos) > max_photos:
+            if len(embeddings) + len(valid_photos) > max_photos:
                 raise InvalidInputException(
-                    detail=f"Please upload no more than {max_photos} photos at a time."
+                    detail=f"Total photos per worker cannot exceed {max_photos}. (Current: {len(embeddings)}, New: {len(valid_photos)})"
                 )
 
             try:
