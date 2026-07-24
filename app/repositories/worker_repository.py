@@ -72,6 +72,19 @@ class WorkerRepository:
         self.db.execute("DELETE FROM workers WHERE id = ?", (worker_id,))
         return True, row["thumbnail_path"]
 
+    def name_exists(self, name: str, exclude_id: int | None = None) -> bool:
+        if exclude_id is not None:
+            row = self.db.execute(
+                "SELECT 1 FROM workers WHERE LOWER(name) = LOWER(?) AND id != ?",
+                (name, exclude_id),
+            ).fetchone()
+        else:
+            row = self.db.execute(
+                "SELECT 1 FROM workers WHERE LOWER(name) = LOWER(?)",
+                (name,),
+            ).fetchone()
+        return row is not None
+
     def exists(self, worker_id: int) -> bool:
         row = self.db.execute(
             "SELECT 1 FROM workers WHERE id = ?", (worker_id,)

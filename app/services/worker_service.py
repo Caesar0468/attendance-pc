@@ -6,6 +6,7 @@ from fastapi import UploadFile
 from app.config import load_config
 from app.core.exceptions import (
     BaseAppException,
+    DuplicateWorkerError,
     FaceDetectionError,
     FileProcessingError,
     InvalidInputException,
@@ -40,6 +41,9 @@ class WorkerService:
         clean_name = name.strip()
         if not clean_name:
             raise InvalidInputException(detail="Worker name cannot be empty.")
+
+        if self.worker_repo.name_exists(clean_name):
+            raise DuplicateWorkerError(detail=f"A worker named '{clean_name}' already exists.")
 
         if len(photos) < min_photos:
             raise InvalidInputException(
@@ -117,6 +121,8 @@ class WorkerService:
             clean_name = name.strip()
             if not clean_name:
                 raise InvalidInputException(detail="Worker name cannot be empty.")
+            if self.worker_repo.name_exists(clean_name, exclude_id=worker_id):
+                raise DuplicateWorkerError(detail=f"A worker named '{clean_name}' already exists.")
             new_name = clean_name
         else:
             new_name = worker["name"]

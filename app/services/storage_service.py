@@ -1,10 +1,13 @@
 """Service for handling file system operations"""
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
 
 from app.config import BASE_DIR, PHOTOS_DIR, UPLOADS_DIR
 from app.exif_utils import embed_exif
+
+_SAFE_CHARS = re.compile(r"[^A-Za-z0-9_-]")
 
 
 class StorageService:
@@ -24,6 +27,9 @@ class StorageService:
         session: str,
     ) -> tuple[Path, str]:
         """Save an attendance photo with EXIF data embedded"""
+        # Sanitize username to prevent path traversal attacks
+        safe_username = _SAFE_CHARS.sub("_", username)[:50] or "unknown"
+
         try:
             dt = self._datetime_from_timestamp(timestamp)
             time_str = dt.strftime("%H%M%S")
@@ -31,7 +37,7 @@ class StorageService:
             time_str = "000000"
 
         session_id = uuid.uuid4().hex[:8]
-        filename = f"{username}_{date}_{time_str}_{session_id}.jpg"
+        filename = f"{safe_username}_{date}_{time_str}_{session_id}.jpg"
 
         save_dir = self.photos_dir / date / session
         save_dir.mkdir(parents=True, exist_ok=True)
