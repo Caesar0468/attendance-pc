@@ -26,17 +26,24 @@ app.include_router(upload.router)
 app.include_router(system.router)
 
 static_dir = BASE_DIR / "static"
+static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 uploads_dir = BASE_DIR / "uploads"
 uploads_dir.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
+photos_dir = BASE_DIR / "photos"
+photos_dir.mkdir(exist_ok=True)
+app.mount("/photos", StaticFiles(directory=str(photos_dir)), name="photos")
+
 
 @app.get("/")
 async def index():
     index_path = static_dir / "index.html"
-    return FileResponse(index_path)
+    if index_path.exists():
+        return FileResponse(index_path)
+    return {"message": "Attendance App API is running."}
 
 
 @app.get("/pair")

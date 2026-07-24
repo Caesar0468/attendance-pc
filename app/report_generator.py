@@ -3,6 +3,7 @@ from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 from app.config import REPORTS_DIR
 from app.database import get_connection, get_setting
@@ -83,7 +84,8 @@ def generate_report(start_date: str, end_date: str, daily_wage: float | None = N
 
     for col in ws.columns:
         max_len = max(len(str(cell.value or "")) for cell in col)
-        ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 30)
+        col_letter = get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = min(max_len + 2, 30)
 
     summary_ws = wb.create_sheet("Monthly Summary")
     sum_headers = [
@@ -111,7 +113,8 @@ def generate_report(start_date: str, end_date: str, daily_wage: float | None = N
 
     for col in summary_ws.columns:
         max_len = max(len(str(cell.value or "")) for cell in col)
-        summary_ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 25)
+        col_letter = get_column_letter(col[0].column)
+        summary_ws.column_dimensions[col_letter].width = min(max_len + 2, 25)
 
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"attendance_{start_date}_to_{end_date}.xlsx"

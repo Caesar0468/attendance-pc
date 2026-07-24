@@ -2,16 +2,14 @@
 
 from pydantic import BaseModel
 
-class WorkerAttendanceItem(BaseModel):
-    """Worker shown in attendance list (morning/evening)"""
 
+class WorkerAttendanceItem(BaseModel):
     id: int
     name: str
     thumbnail_path: str | None
 
-class UncertainMatchItem(BaseModel):
-    """Uncertain face match requiring manual confirmation"""
 
+class UncertainMatchItem(BaseModel):
     id: int
     date: str
     session: str
@@ -20,26 +18,23 @@ class UncertainMatchItem(BaseModel):
     similarity: float | None
     status: str
     confirmed_worker_id: int | None
-    created_at: str
+    created_at: str | None = None
     suggested_worker_name: str | None
 
-class TodayAttendanceOut(BaseModel):
-    """Today's attendance summary with morning/evening lists and uncertain matches"""
 
+class TodayAttendanceOut(BaseModel):
     date: str
     morning: list[WorkerAttendanceItem]
     evening: list[WorkerAttendanceItem]
     uncertain: list[UncertainMatchItem]
     total_workers: int
 
-class ConfirmUncertainRequest(BaseModel):
-    """Request to confirm or discard an uncertain match"""
 
+class ConfirmUncertainRequest(BaseModel):
     uncertain_id: int
-    worker_id: int | None = None  # None = not a worker (discard)
+    worker_id: int | None = None
+
 
 class ConfirmUncertainOut(BaseModel):
-    """Response after confirming/discarding uncertain match"""
-
     success: bool
     today: TodayAttendanceOut

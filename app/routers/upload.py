@@ -3,6 +3,7 @@ from datetime import date as date_type
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
+from app.core.exceptions import BaseAppException
 from app.database import get_db
 from app.face_service import FaceService
 from app.repositories.attendance_repository import AttendanceRepository
@@ -16,13 +17,14 @@ router = APIRouter(tags=["upload"])
 
 VALID_SESSIONS = {"morning", "evening"}
 
+
 @router.post("/upload-photo", response_model=PhotoUploadOut)
 async def upload_photo(
     file: UploadFile = File(...),
     username: str = Form(...),
     session: str = Form(...),
     timestamp: str = Form(...),
-    photo_date: str = Form(default=None, alias="date"),
+    photo_date: str | None = Form(default=None, alias="date"),
     db: sqlite3.Connection = Depends(get_db),
 ):
     attendance_date = photo_date or date_type.today().isoformat()
@@ -49,12 +51,11 @@ async def upload_photo(
     if not data:
         raise HTTPException(status_code=400, detail="The uploaded file was empty.")
 
-    # Inject dependencies and create service
     storage = StorageService()
     face_svc = FaceService.get()
     attendance_repo = AttendanceRepository(db)
     worker_repo = WorkerRepository(db)
-    
+
     service = AttendanceService(
         storage, face_svc, attendance_repo, worker_repo, manager
     )
@@ -67,6 +68,8 @@ async def upload_photo(
             timestamp=timestamp.strip(),
             photo_date=attendance_date,
         )
+    except BaseAppException as e:
+        raise HTTPException(status_code=getattr(e, "status_code", 400), detail=e.detail) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:

@@ -1,31 +1,36 @@
 import io
+from datetime import datetime
 
 import piexif
 from PIL import Image
 
 
 def _to_exif_datetime(timestamp: str) -> str:
-    """Convert an ISO-ish timestamp to EXIF's required 'YYYY:MM:DD HH:MM:SS' format.
-    Falls back to the raw string if it can't be parsed, rather than raising.
-    """
-    from datetime import datetime
-
-    candidates = ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f")
+    """Convert an ISO timestamp to EXIF's required 'YYYY:MM:DD HH:MM:SS' format."""
+    clean_ts = timestamp.replace("Z", "").split("+")[0].strip()
+    candidates = (
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S.%f",
+    )
     for fmt in candidates:
         try:
-            dt = datetime.strptime(timestamp, fmt)
+            dt = datetime.strptime(clean_ts, fmt)
             return dt.strftime("%Y:%m:%d %H:%M:%S")
         except ValueError:
             continue
-    return timestamp
+    try:
+        dt = datetime.fromisoformat(clean_ts)
+        return dt.strftime("%Y:%m:%d %H:%M:%S")
+    except ValueError:
+        return datetime.now().strftime("%Y:%m:%d %H:%M:%S")
 
 
 def embed_exif(image_bytes: bytes, username: str, timestamp: str) -> bytes:
     """Embed uploader metadata into image EXIF before saving."""
     img = Image.open(io.BytesIO(image_bytes))
 
-    # Read any existing EXIF from the ORIGINAL image before mode conversion,
-    # since .convert() drops the .info dict and would lose it otherwise.
     exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
     try:
         if img.info.get("exif"):

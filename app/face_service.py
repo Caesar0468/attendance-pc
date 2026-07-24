@@ -4,8 +4,6 @@ import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
 
-from app.config import load_config
-
 
 @dataclass
 class DetectedFace:
@@ -86,7 +84,8 @@ class FaceService:
             h, w = img.shape[:2]
             x1, y1 = max(0, x1), max(0, y1)
             x2, y2 = min(w, x2), min(h, y2)
-            img = img[y1:y2, x1:x2]
+            if x2 > x1 and y2 > y1:
+                img = img[y1:y2, x1:x2]
 
         thumb = cv2.resize(img, (size, size), interpolation=cv2.INTER_AREA)
         ok, encoded = cv2.imencode(".jpg", thumb, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
