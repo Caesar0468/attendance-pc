@@ -1,4 +1,5 @@
-"""Repository for worker data access operations"""
+from __future__ import annotations
+
 import sqlite3
 from typing import Any
 
@@ -24,6 +25,19 @@ class WorkerRepository:
             "SELECT * FROM workers WHERE id = ?", (worker_id,)
         ).fetchone()
         return dict(row) if row else None
+
+    def name_exists(self, name: str, exclude_id: int | None = None) -> bool:
+        if exclude_id is not None:
+            row = self.db.execute(
+                "SELECT 1 FROM workers WHERE LOWER(name) = LOWER(?) AND id != ?",
+                (name, exclude_id),
+            ).fetchone()
+        else:
+            row = self.db.execute(
+                "SELECT 1 FROM workers WHERE LOWER(name) = LOWER(?)",
+                (name,),
+            ).fetchone()
+        return row is not None
 
     def get_all_with_embeddings(self) -> list[tuple[int, list[list[float]]]]:
         rows = self.db.execute("SELECT id, embeddings FROM workers").fetchall()
@@ -57,11 +71,6 @@ class WorkerRepository:
         )
 
     def delete(self, worker_id: int) -> tuple[bool, str | None]:
-        """Delete a worker by ID.
-
-        Returns:
-            Tuple of (found, thumbnail_path)
-        """
         row = self.db.execute(
             "SELECT thumbnail_path FROM workers WHERE id = ?", (worker_id,)
         ).fetchone()
@@ -71,19 +80,6 @@ class WorkerRepository:
 
         self.db.execute("DELETE FROM workers WHERE id = ?", (worker_id,))
         return True, row["thumbnail_path"]
-
-    def name_exists(self, name: str, exclude_id: int | None = None) -> bool:
-        if exclude_id is not None:
-            row = self.db.execute(
-                "SELECT 1 FROM workers WHERE LOWER(name) = LOWER(?) AND id != ?",
-                (name, exclude_id),
-            ).fetchone()
-        else:
-            row = self.db.execute(
-                "SELECT 1 FROM workers WHERE LOWER(name) = LOWER(?)",
-                (name,),
-            ).fetchone()
-        return row is not None
 
     def exists(self, worker_id: int) -> bool:
         row = self.db.execute(

@@ -1,4 +1,5 @@
-"""Repository for attendance and uncertain match data access operations"""
+from __future__ import annotations
+
 import sqlite3
 from datetime import date as date_type
 from typing import Any

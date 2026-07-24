@@ -1,12 +1,13 @@
-"""Pydantic schemas for worker-related requests and responses"""
+from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel
 
 
 class WorkerBase(BaseModel):
     id: int
     name: str
-    thumbnail_path: str | None
+    thumbnail_path: Optional[str] = None
 
 
 class WorkerOut(WorkerBase):
@@ -14,13 +15,13 @@ class WorkerOut(WorkerBase):
 
 
 class WorkerWithTimestamp(WorkerBase):
-    created_at: str | None = None
+    created_at: Optional[str] = None
 
 
 class WorkerCreateOut(BaseModel):
     id: int
     name: str
-    thumbnail_path: str | None
+    thumbnail_path: Optional[str] = None
 
 
 class WorkerListOut(BaseModel):

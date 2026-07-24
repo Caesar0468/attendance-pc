@@ -1,4 +1,5 @@
-"""Service for worker management business logic"""
+from __future__ import annotations
+
 from typing import Any
 
 from fastapi import UploadFile
@@ -19,8 +20,6 @@ from app.services.storage_service import StorageService
 
 
 class WorkerService:
-    """Handles business logic for worker enrollment and management"""
-
     def __init__(
         self,
         storage: StorageService,

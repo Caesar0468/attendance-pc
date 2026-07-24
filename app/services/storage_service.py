@@ -1,4 +1,5 @@
-"""Service for handling file system operations"""
+from __future__ import annotations
+
 import re
 import uuid
 from datetime import datetime
@@ -26,8 +27,6 @@ class StorageService:
         timestamp: str,
         session: str,
     ) -> tuple[Path, str]:
-        """Save an attendance photo with EXIF data embedded"""
-        # Sanitize username to prevent path traversal attacks
         safe_username = _SAFE_CHARS.sub("_", username)[:50] or "unknown"
 
         try:
@@ -50,7 +49,6 @@ class StorageService:
 
         save_path.write_bytes(exif_bytes)
 
-        # Enforce POSIX forward-slashes for web URL compatibility on Windows
         relative_path = save_path.relative_to(self.photos_dir.parent).as_posix()
         return save_path, relative_path
 

@@ -1,16 +1,15 @@
-"""Pydantic schemas for photo upload requests and responses"""
+from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel
-
 from app.schemas.attendance import TodayAttendanceOut
 
-class PhotoUploadOut(BaseModel):
-    """Response after uploading an attendance photo"""
 
+class PhotoUploadOut(BaseModel):
     saved: bool
     filename: str
     faces_detected: int
-    matched: list[int]  # List of worker IDs that were matched
-    uncertain: list[int]  # List of uncertain match IDs created
+    matched: list[int]
+    uncertain: list[int]
     today: TodayAttendanceOut
-    message: str | None = None  # Only present when no faces detected
+    message: Optional[str] = None

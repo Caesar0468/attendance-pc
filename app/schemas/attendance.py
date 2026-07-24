@@ -1,12 +1,13 @@
-"""Pydantic schemas for attendance and today view requests and responses"""
+from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel
 
 
 class WorkerAttendanceItem(BaseModel):
     id: int
     name: str
-    thumbnail_path: str | None
+    thumbnail_path: Optional[str] = None
 
 
 class UncertainMatchItem(BaseModel):
@@ -14,12 +15,12 @@ class UncertainMatchItem(BaseModel):
     date: str
     session: str
     face_crop_path: str
-    suggested_worker_id: int | None
-    similarity: float | None
+    suggested_worker_id: Optional[int] = None
+    similarity: Optional[float] = None
     status: str
-    confirmed_worker_id: int | None
-    created_at: str | None = None
-    suggested_worker_name: str | None
+    confirmed_worker_id: Optional[int] = None
+    created_at: Optional[str] = None
+    suggested_worker_name: Optional[str] = None
 
 
 class TodayAttendanceOut(BaseModel):
@@ -32,7 +33,7 @@ class TodayAttendanceOut(BaseModel):
 
 class ConfirmUncertainRequest(BaseModel):
     uncertain_id: int
-    worker_id: int | None = None
+    worker_id: Optional[int] = None
 
 
 class ConfirmUncertainOut(BaseModel):

@@ -1,26 +1,23 @@
-"""Pydantic schemas for report generation and settings requests and responses"""
+from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel
 
-class ReportSettingsOut(BaseModel):
-    """Daily wage settings output"""
 
+class ReportSettingsOut(BaseModel):
     daily_wage: float
+
 
 class SettingsUpdateRequest(BaseModel):
-    """Request to update daily wage setting"""
-
     daily_wage: float
 
-class ReportGenerateRequest(BaseModel):
-    """Request to generate an attendance report"""
 
+class ReportGenerateRequest(BaseModel):
     start_date: str
     end_date: str
-    daily_wage: float | None = None
+    daily_wage: Optional[float] = None
+
 
 class ReportGenerateOut(BaseModel):
-    """Response after generating a report"""
-
     filename: str
     download_url: str

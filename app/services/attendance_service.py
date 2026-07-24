@@ -1,4 +1,5 @@
-"""Service for attendance processing business logic"""
+from __future__ import annotations
+
 from datetime import date as date_type
 from typing import Any
 
@@ -56,6 +57,13 @@ class AttendanceService:
         if session not in ("morning", "evening"):
             raise InvalidInputException(detail="Session must be 'morning' or 'evening'.")
 
+        try:
+            faces = self.face_service.detect_faces(image_bytes)
+        except (ValueError, RuntimeError) as e:
+            raise FaceDetectionError(detail=f"Face detection failed: {e}") from e
+        except Exception as e:
+            raise FileProcessingError(detail="Could not read that photo, please try again.") from e
+
         save_path, relative_filename = self.storage.save_attendance_photo(
             image_bytes, username, photo_date, timestamp, session
         )
@@ -69,13 +77,6 @@ class AttendanceService:
         self.attendance_repo.log_photo(
             relative_filename, username, photo_date, time_str, session
         )
-
-        try:
-            faces = self.face_service.detect_faces(image_bytes)
-        except (ValueError, RuntimeError) as e:
-            raise FaceDetectionError(detail=f"Face detection failed: {e}") from e
-        except Exception as e:
-            raise FileProcessingError(detail="Could not read that photo, please try again.") from e
 
         if not faces:
             return {
