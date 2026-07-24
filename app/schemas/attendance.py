@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -25,9 +25,9 @@ class UncertainMatchItem(BaseModel):
 
 class TodayAttendanceOut(BaseModel):
     date: str
-    morning: list[WorkerAttendanceItem]
-    evening: list[WorkerAttendanceItem]
-    uncertain: list[UncertainMatchItem]
+    morning: List[WorkerAttendanceItem]
+    evening: List[WorkerAttendanceItem]
+    uncertain: List[UncertainMatchItem]
     total_workers: int
 
 

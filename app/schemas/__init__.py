@@ -1,4 +1,4 @@
-"""Pydantic schemas for request/response validation across the application"""
+from __future__ import annotations
 
 from app.schemas.attendance import (
     ConfirmUncertainOut,
@@ -7,7 +7,7 @@ from app.schemas.attendance import (
     UncertainMatchItem,
     WorkerAttendanceItem,
 )
-from app.schemas.common import MessageResponse, SuccessResponse
+from app.schemas.common import SuccessResponse
 from app.schemas.report import (
     ReportGenerateOut,
     ReportGenerateRequest,
@@ -23,7 +23,6 @@ from app.schemas.system import (
 )
 from app.schemas.upload import PhotoUploadOut
 from app.schemas.worker import (
-    WorkerBase,
     WorkerCreateOut,
     WorkerListOut,
     WorkerOut,
@@ -31,32 +30,25 @@ from app.schemas.worker import (
 )
 
 __all__ = [
-    # Common
-    "MessageResponse",
-    "SuccessResponse",
-    # Workers
+    "WorkerAttendanceItem",
+    "UncertainMatchItem",
+    "TodayAttendanceOut",
+    "ConfirmUncertainRequest",
+    "ConfirmUncertainOut",
     "WorkerBase",
-    "WorkerCreateOut",
-    "WorkerListOut",
     "WorkerOut",
     "WorkerWithTimestamp",
-    # Attendance
-    "ConfirmUncertainOut",
-    "ConfirmUncertainRequest",
-    "TodayAttendanceOut",
-    "UncertainMatchItem",
-    "WorkerAttendanceItem",
-    # Upload
+    "WorkerCreateOut",
+    "WorkerListOut",
     "PhotoUploadOut",
-    # Reports
-    "ReportGenerateOut",
-    "ReportGenerateRequest",
     "ReportSettingsOut",
     "SettingsUpdateRequest",
-    # System
+    "ReportGenerateRequest",
+    "ReportGenerateOut",
     "HealthOut",
-    "PairDeviceOut",
-    "PairDeviceRequest",
     "ServerInfoOut",
     "ShutdownOut",
+    "PairDeviceRequest",
+    "PairDeviceOut",
+    "SuccessResponse",
 ]

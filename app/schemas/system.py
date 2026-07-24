@@ -1,34 +1,29 @@
-"""Pydantic schemas for system, pairing, and health check requests and responses"""
+from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel
 
-class HealthOut(BaseModel):
-    """Health check response"""
 
+class HealthOut(BaseModel):
     status: str
 
-class ServerInfoOut(BaseModel):
-    """Server information response with network details"""
 
+class ServerInfoOut(BaseModel):
     local_ip: str
     port: int
     pair_url: str
     app_url: str
 
-class PairDeviceRequest(BaseModel):
-    """Request to pair a device"""
-
-    device_name: str | None = None
-
-class PairDeviceOut(BaseModel):
-    """Response after pairing a device"""
-
-    success: bool
-    message: str
-    device: str
 
 class ShutdownOut(BaseModel):
-    """Response after shutdown request"""
+    success: bool
+    message: str
 
+
+class PairDeviceRequest(BaseModel):
+    device_name: Optional[str] = None
+
+
+class PairDeviceOut(BaseModel):
     success: bool
     message: str
