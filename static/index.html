@@ -1,32 +1,424 @@
-<script>
-    async function handleWorkerEnroll(e) {
-        e.preventDefault();
-        const btn = document.getElementById('enrollBtn');
-        btn.disabled = true;
-        btn.textContent = 'Processing...';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kshirsagar Group Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-        const formData = new FormData();
-        formData.append('name', document.getElementById('workerName').value);
-        const files = document.getElementById('workerPhotos').files;
-        for (let f of files) formData.append('photos', f);
+  <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid font-bold text-2xl fa-id-card-clip"></i>
+        <h1 class="text-xl md:text-2xl font-bold tracking-wide">Kshirsagar Group Attendance</h1>
+      </div>
+      <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+        <span id="wsStatus" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500 text-slate-900">
+          <span class="w-2 h-2 mr-1.5 rounded-full bg-slate-900 animate-pulse"></span> Connecting...
+        </span>
+        <button onclick="openPairModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 shadow">
+          <i class="fa-solid fa-qrcode"></i> Pair Mobile
+        </button>
+      </div>
+    </div>
+  </header>
 
+  <div class="bg-white border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 flex space-x-8">
+      <button id="tabToday" onclick="switchTab('today')" class="py-3.5 px-1 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2">
+        <i class="fa-solid fa-calendar-day"></i> Today's Attendance
+      </button>
+      <button id="tabWorkers" onclick="switchTab('workers')" class="py-3.5 px-1 font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-users"></i> Manage Workers
+      </button>
+      <button id="tabReports" onclick="switchTab('reports')" class="py-3.5 px-1 font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-file-excel"></i> Reports & Salary
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <section id="viewToday" class="space-y-6">
+      <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Attendance Summary</h2>
+          <p id="currentDateDisplay" class="text-sm text-slate-500">Loading date...</p>
+        </div>
+        <div class="flex items-center gap-3 mt-2 sm:mt-0">
+          <label for="datePicker" class="text-sm font-medium text-slate-600">View Date:</label>
+          <input type="date" id="datePicker" onchange="loadTodayData(this.value)" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+        </div>
+      </div>
+
+      <div id="uncertainSection" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 shadow-sm">
+        <h3 class="text-amber-800 font-bold text-md flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-triangle-exclamation"></i> Action Required: Uncertain Face Matches
+        </h3>
+        <div id="uncertainList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="bg-slate-800 text-white px-5 py-3.5 flex justify-between items-center">
+            <span class="font-bold text-md flex items-center gap-2"><i class="fa-solid fa-sun text-amber-400"></i> Morning Session</span>
+            <span id="morningCount" class="bg-slate-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">0 Present</span>
+          </div>
+          <div id="morningList" class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 min-h-[160px] align-content-start"></div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="bg-indigo-900 text-white px-5 py-3.5 flex justify-between items-center">
+            <span class="font-bold text-md flex items-center gap-2"><i class="fa-solid fa-moon text-indigo-300"></i> Evening Session</span>
+            <span id="eveningCount" class="bg-indigo-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">0 Present</span>
+          </div>
+          <div id="eveningList" class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 min-h-[160px] align-content-start"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewWorkers" class="hidden space-y-6">
+      <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold text-slate-800">Enrolled Construction Workers</h2>
+        <button onclick="openEnrollModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow">
+          <i class="fa-solid fa-user-plus"></i> Enroll New Worker
+        </button>
+      </div>
+
+      <div id="workersGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+    </section>
+
+    <section id="viewReports" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-2xl mx-auto space-y-6">
+        <h2 class="text-xl font-bold text-slate-800 border-b pb-3"><i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i>Generate Excel Attendance Report</h2>
+
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+          <label class="block text-sm font-bold text-slate-700">Configured Daily Wage (₹)</label>
+          <div class="flex gap-3">
+            <input type="number" id="dailyWageInput" step="10" min="1" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full outline-none focus:ring-2 focus:ring-indigo-500" />
+            <button onclick="saveDailyWage()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Save</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+            <input type="date" id="reportStartDate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+            <input type="date" id="reportEndDate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <button onclick="generateReport()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg font-bold transition flex justify-center items-center gap-2 shadow">
+          <i class="fa-solid fa-download"></i> Generate & Download Excel
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="pairModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
+      <h3 class="text-xl font-bold text-slate-800">Scan to Pair Phone</h3>
+      <p class="text-xs text-slate-500">Scan this QR code using your phone camera to open the mobile attendance uploader on your local network.</p>
+      <div class="flex justify-center p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <img id="qrImage" src="" alt="Pairing QR Code" class="w-48 h-48 object-contain" />
+      </div>
+      <p id="pairUrlText" class="text-xs font-mono text-indigo-600 break-all bg-indigo-50 p-2 rounded"></p>
+      <button onclick="closePairModal()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg text-sm transition">Close</button>
+    </div>
+  </div>
+
+  <div id="enrollModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <h3 class="text-xl font-bold text-slate-800">Enroll New Worker</h3>
+      <form id="enrollForm" onsubmit="handleEnrollWorker(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Worker Full Name</label>
+          <input type="text" id="workerNameInput" required placeholder="e.g. Ramesh Kumar" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Clear Frontal Photos (2 - 3 photos)</label>
+          <input type="file" id="workerPhotosInput" multiple accept="image/*" required class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeEnrollModal()" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg text-sm transition">Cancel</button>
+          <button type="submit" id="enrollSubmitBtn" class="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 rounded-lg text-sm transition">Enroll</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let ws = null;
+    let selectedDate = new Date().toISOString().split('T')[0];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('datePicker').value = selectedDate;
+      document.getElementById('reportStartDate').value = selectedDate;
+      document.getElementById('reportEndDate').value = selectedDate;
+      
+      loadTodayData(selectedDate);
+      loadDailyWage();
+      initWebSocket();
+    });
+
+    function initWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}/api/today/ws`);
+
+      ws.onopen = () => {
+        const status = document.getElementById('wsStatus');
+        status.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white";
+        status.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-white animate-pulse"></span> Live Online`;
+      };
+
+      ws.onmessage = (event) => {
         try {
-            const res = await fetch('/api/workers', { method: 'POST', body: formData });
-            const text = await res.text();
-            let data = {};
-            try { data = JSON.parse(text); } catch (_) {}
-
-            if (res.ok) {
-                document.getElementById('enrollForm').reset();
-                loadWorkers();
-            } else {
-                alert(data.detail || text || 'Failed to enroll worker');
-            }
-        } catch (err) {
-            alert(err.message || 'Error communicating with server');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Enroll Worker';
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'attendance_update' && payload.data) {
+            renderAttendance(payload.data);
+          }
+        } catch (e) {
+          console.error("WS Parse Error:", e);
         }
+      };
+
+      ws.onclose = () => {
+        const status = document.getElementById('wsStatus');
+        status.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500 text-slate-900";
+        status.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-slate-900 animate-pulse"></span> Reconnecting...`;
+        setTimeout(initWebSocket, 3000);
+      };
     }
-</script>
+
+    async function loadTodayData(dateStr) {
+      selectedDate = dateStr;
+      try {
+        const res = await fetch(`/api/today?day=${dateStr}`);
+        if (!res.ok) throw new Error("Failed to load attendance");
+        const data = await res.json();
+        renderAttendance(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderAttendance(data) {
+      document.getElementById('currentDateDisplay').innerText = `Date: ${data.date} | Total Workers: ${data.total_workers}`;
+      
+      // Render Morning
+      const morningEl = document.getElementById('morningList');
+      document.getElementById('morningCount').innerText = `${data.morning.length} Present`;
+      morningEl.innerHTML = data.morning.length ? data.morning.map(w => workerBadge(w)).join('') : emptyBadge('No workers present');
+
+      // Render Evening
+      const eveningEl = document.getElementById('eveningList');
+      document.getElementById('eveningCount').innerText = `${data.evening.length} Present`;
+      eveningEl.innerHTML = data.evening.length ? data.evening.map(w => workerBadge(w)).join('') : emptyBadge('No workers present');
+
+      // Render Uncertain
+      const uncertainSec = document.getElementById('uncertainSection');
+      const uncertainEl = document.getElementById('uncertainList');
+      if (data.uncertain && data.uncertain.length > 0) {
+        uncertainSec.classList.remove('hidden');
+        uncertainEl.innerHTML = data.uncertain.map(u => uncertainCard(u)).join('');
+      } else {
+        uncertainSec.classList.add('hidden');
+      }
+    }
+
+    function workerBadge(w) {
+      const thumb = w.thumbnail_path ? `/${w.thumbnail_path}` : 'https://via.placeholder.com/100';
+      return `
+        <div class="flex items-center space-x-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
+          <img src="${thumb}" class="w-9 h-9 rounded-full object-cover border" />
+          <span class="text-xs font-bold text-slate-700 truncate">${w.name}</span>
+        </div>
+      `;
+    }
+
+    function emptyBadge(msg) {
+      return `<div class="col-span-full text-center py-8 text-slate-400 text-sm italic">${msg}</div>`;
+    }
+
+    function uncertainCard(u) {
+      return `
+        <div class="bg-white p-3 rounded-lg border border-amber-200 shadow-sm flex items-center space-x-3">
+          <img src="/${u.face_crop_path}" class="w-14 h-14 rounded-lg object-cover border" />
+          <div class="flex-grow min-w-0">
+            <p class="text-xs font-bold text-slate-800">Suggested: ${u.suggested_worker_name || 'Unknown'}</p>
+            <p class="text-[10px] text-slate-500 uppercase">${u.session} session</p>
+            <div class="flex gap-2 mt-2">
+              <button onclick="confirmUncertain(${u.id}, ${u.suggested_worker_id})" class="bg-emerald-600 text-white text-[11px] font-semibold px-2 py-1 rounded hover:bg-emerald-500">Confirm</button>
+              <button onclick="confirmUncertain(${u.id}, null)" class="bg-slate-200 text-slate-700 text-[11px] font-semibold px-2 py-1 rounded hover:bg-slate-300">Discard</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function confirmUncertain(uncertainId, workerId) {
+      try {
+        await fetch('/api/today/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uncertain_id: uncertainId, worker_id: workerId })
+        });
+        loadTodayData(selectedDate);
+      } catch (err) {
+        alert("Action failed. Please try again.");
+      }
+    }
+
+    function switchTab(tab) {
+      ['Today', 'Workers', 'Reports'].forEach(t => {
+        const btn = document.getElementById(`tab${t}`);
+        const view = document.getElementById(`view${t}`);
+        if (t.toLowerCase() === tab) {
+          btn.className = "py-3.5 px-1 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2";
+          view.classList.remove('hidden');
+        } else {
+          btn.className = "py-3.5 px-1 font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2";
+          view.classList.add('hidden');
+        }
+      });
+
+      if (tab === 'workers') loadWorkers();
+    }
+
+    async function loadWorkers() {
+      const grid = document.getElementById('workersGrid');
+      grid.innerHTML = '<div class="col-span-full text-center py-8 text-slate-500">Loading workers...</div>';
+      try {
+        const res = await fetch('/api/workers');
+        const data = await res.json();
+        if (!data.workers.length) {
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400">No workers enrolled yet.</div>';
+          return;
+        }
+        grid.innerHTML = data.workers.map(w => `
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center space-y-2">
+            <img src="${w.thumbnail_path ? '/' + w.thumbnail_path : 'https://via.placeholder.com/128'}" class="w-20 h-20 rounded-full object-cover border-2 border-indigo-100" />
+            <h3 class="font-bold text-slate-800 text-sm">${w.name}</h3>
+            <button onclick="deleteWorker(${w.id}, '${w.name}')" class="text-xs text-rose-600 hover:text-rose-800 font-semibold pt-1">
+              <i class="fa-solid fa-trash mr-1"></i> Delete
+            </button>
+          </div>
+        `).join('');
+      } catch (e) {
+        grid.innerHTML = '<div class="col-span-full text-center py-8 text-rose-500">Failed to load workers.</div>';
+      }
+    }
+
+    async function handleEnrollWorker(e) {
+      e.preventDefault();
+      const btn = document.getElementById('enrollSubmitBtn');
+      btn.disabled = true;
+      btn.innerText = "Enrolling...";
+
+      const formData = new FormData();
+      formData.append('name', document.getElementById('workerNameInput').value);
+      const files = document.getElementById('workerPhotosInput').files;
+      for (let f of files) formData.append('photos', f);
+
+      try {
+        const res = await fetch('/api/workers', { method: 'POST', body: formData });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Enrollment failed");
+        }
+        closeEnrollModal();
+        loadWorkers();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Enroll";
+      }
+    }
+
+    async function deleteWorker(id, name) {
+      if (!confirm(`Are you sure you want to delete worker "${name}"?`)) return;
+      try {
+        await fetch(`/api/workers/${id}`, { method: 'DELETE' });
+        loadWorkers();
+      } catch (e) {
+        alert("Could not delete worker.");
+      }
+    }
+
+    async function loadDailyWage() {
+      try {
+        const res = await fetch('/api/reports/settings');
+        const data = await res.json();
+        document.getElementById('dailyWageInput').value = data.daily_wage;
+      } catch (e) {}
+    }
+
+    async function saveDailyWage() {
+      const wage = parseFloat(document.getElementById('dailyWageInput').value);
+      if (!wage || wage <= 0) return alert("Please enter a valid wage.");
+      try {
+        await fetch('/api/reports/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ daily_wage: wage })
+        });
+        alert("Daily wage saved!");
+      } catch (e) {
+        alert("Could not save wage.");
+      }
+    }
+
+    async function generateReport() {
+      const start = document.getElementById('reportStartDate').value;
+      const end = document.getElementById('reportEndDate').value;
+      try {
+        const res = await fetch('/api/reports/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ start_date: start, end_date: end })
+        });
+        if (!res.ok) throw new Error("Could not generate report");
+        const data = await res.json();
+        window.location.href = data.download_url;
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function openPairModal() {
+      document.getElementById('pairModal').classList.remove('hidden');
+      document.getElementById('pairModal').classList.add('flex');
+      document.getElementById('qrImage').src = '/api/qr-code';
+      try {
+        const res = await fetch('/api/server-info');
+        const data = await res.json();
+        document.getElementById('pairUrlText').innerText = data.pair_url;
+      } catch (e) {}
+    }
+
+    function closePairModal() {
+      document.getElementById('pairModal').classList.add('hidden');
+      document.getElementById('pairModal').classList.remove('flex');
+    }
+
+    function openEnrollModal() {
+      document.getElementById('enrollForm').reset();
+      document.getElementById('enrollModal').classList.remove('hidden');
+      document.getElementById('enrollModal').classList.add('flex');
+    }
+
+    function closeEnrollModal() {
+      document.getElementById('enrollModal').classList.add('hidden');
+      document.getElementById('enrollModal').classList.remove('flex');
+    }
+  </script>
+</body>
+</html>

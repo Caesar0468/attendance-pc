@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -6,7 +8,7 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from app.config import REPORTS_DIR
-from app.database import get_connection, get_setting
+from app.database import get_connection
 
 
 def _status(morning: bool, evening: bool) -> str:
@@ -18,14 +20,18 @@ def _status(morning: bool, evening: bool) -> str:
 
 
 def generate_report(start_date: str, end_date: str, daily_wage: float | None = None) -> Path:
-    wage = daily_wage if daily_wage is not None else float(get_setting("daily_wage", "500.0"))
-
     start = datetime.strptime(start_date, "%Y-%m-%d").date()
     end = datetime.strptime(end_date, "%Y-%m-%d").date()
     if start > end:
         raise ValueError("Start date must be before end date.")
 
     with get_connection() as conn:
+        if daily_wage is None:
+            row = conn.execute("SELECT value FROM settings WHERE key = 'daily_wage'").fetchone()
+            wage = float(row["value"]) if row else 500.0
+        else:
+            wage = daily_wage
+
         workers = conn.execute("SELECT id, name FROM workers ORDER BY name").fetchall()
         attendance = conn.execute(
             """

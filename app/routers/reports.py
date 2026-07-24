@@ -1,11 +1,13 @@
-import sqlite3
-from datetime import datetime
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from app.config import REPORTS_DIR
-from app.database import get_db
+from app.database import get_connection
 from app.repositories.settings_repository import SettingsRepository
 from app.report_generator import generate_report
 from app.schemas import ReportGenerateOut, ReportGenerateRequest, ReportSettingsOut, SettingsUpdateRequest
@@ -14,24 +16,23 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
 @router.get("/settings", response_model=ReportSettingsOut)
-def get_settings(db: sqlite3.Connection = Depends(get_db)):
-    repo = SettingsRepository(db)
-    stored_wage = repo.get("daily_wage", "500.0")
-    return {"daily_wage": float(stored_wage)}
+def get_settings():
+    with get_connection() as conn:
+        repo = SettingsRepository(conn)
+        stored_wage = repo.get("daily_wage", "500.0")
+        return {"daily_wage": float(stored_wage)}
 
 
 @router.post("/settings", response_model=ReportSettingsOut)
-def update_settings(
-    body: SettingsUpdateRequest,
-    db: sqlite3.Connection = Depends(get_db),
-):
+def update_settings(body: SettingsUpdateRequest):
     if body.daily_wage <= 0:
         raise HTTPException(
             status_code=400, detail="Daily wage must be greater than zero."
         )
-    repo = SettingsRepository(db)
-    repo.set("daily_wage", str(body.daily_wage))
-    return {"daily_wage": body.daily_wage}
+    with get_connection() as conn:
+        repo = SettingsRepository(conn)
+        repo.set("daily_wage", str(body.daily_wage))
+        return {"daily_wage": body.daily_wage}
 
 
 @router.post("/generate", response_model=ReportGenerateOut)

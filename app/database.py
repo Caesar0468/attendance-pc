@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import date
 from typing import Any
 
 from app.config import DB_PATH, ensure_dirs
@@ -74,7 +73,7 @@ def init_db() -> None:
 @contextmanager
 def get_connection():
     ensure_dirs()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
