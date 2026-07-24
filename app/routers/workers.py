@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sqlite3
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 

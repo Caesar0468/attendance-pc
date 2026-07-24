@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 import cv2
@@ -13,7 +15,7 @@ class DetectedFace:
 
 
 class FaceService:
-    _instance: "FaceService | None" = None
+    _instance: FaceService | None = None
 
     def __init__(self) -> None:
         self._app: FaceAnalysis | None = None
@@ -25,7 +27,7 @@ class FaceService:
         return self._app
 
     @classmethod
-    def get(cls) -> "FaceService":
+    def get(cls) -> FaceService:
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
