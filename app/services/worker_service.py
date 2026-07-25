@@ -1,3 +1,4 @@
+# app/services/worker_service.py
 from __future__ import annotations
 
 from typing import Any
@@ -69,7 +70,7 @@ class WorkerService:
 
                 if i == 0:
                     thumb_bytes = self.face_service.create_thumbnail(data)
-                    _, thumbnail_path = self.storage.save_worker_thumbnail(thumb_bytes)
+                    _, thumbnail_path = self.storage.save_worker_thumbnail(clean_name, thumb_bytes)
 
         except BaseAppException:
             if thumbnail_path:
@@ -158,7 +159,7 @@ class WorkerService:
 
                 if first_data:
                     thumb_bytes = self.face_service.create_thumbnail(first_data)
-                    _, thumbnail_path = self.storage.save_worker_thumbnail(thumb_bytes)
+                    _, thumbnail_path = self.storage.save_worker_thumbnail(new_name, thumb_bytes)
 
             except BaseAppException:
                 raise

@@ -1,3 +1,4 @@
+# app/config.py
 import json
 import logging
 import socket
@@ -11,6 +12,8 @@ CONFIG_PATH = BASE_DIR / "config.json"
 DATA_DIR = BASE_DIR / "data"
 PHOTOS_DIR = BASE_DIR / "photos"
 UPLOADS_DIR = BASE_DIR / "uploads"
+THUMBNAILS_DIR = UPLOADS_DIR / "thumbnails"
+CROPS_DIR = UPLOADS_DIR / "crops"
 REPORTS_DIR = BASE_DIR / "reports"
 DB_PATH = DATA_DIR / "attendance.db"
 
@@ -92,7 +95,7 @@ def save_config(updates: dict) -> dict:
 
 def ensure_dirs() -> None:
     """Create all runtime data directories if they don't already exist."""
-    for path in (DATA_DIR, PHOTOS_DIR, UPLOADS_DIR, REPORTS_DIR):
+    for path in (DATA_DIR, PHOTOS_DIR, UPLOADS_DIR, THUMBNAILS_DIR, CROPS_DIR, REPORTS_DIR):
         path.mkdir(parents=True, exist_ok=True)
 
 

@@ -1,424 +1,1713 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kshirsagar Group Attendance System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance-PC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="/static/vendor/chart.umd.min.js"></script>
+<script src="/static/vendor/anime.min.js"></script>
+<style>
+/* ============================================================
+   ATTENDANCE ORB — token system
+   ============================================================ */
+:root{
+  --void-deep:#06051d;
+  --void-abyss:#011d1c;
+  --orb-surface:#003734;
+  --orb-surface-hover:#0a4c47;
+  --border-subtle:rgba(229,231,235,.12);
+  --border-active:rgba(99,179,237,.35);
+
+  --text-primary:#ffffff;
+  --text-body:#cad5e2;
+  --text-muted:#8fa8a5;
+  --text-dim:#5f7976;
+
+  --status-green:#2dd4a7;
+  --status-amber:#f0b100;
+  --status-red:#ff5f7e;
+
+  --aurora-gradient:linear-gradient(90deg,#00827c 0%,#4fe0d2 45%,#cbfffc 75%,#fde9ff 100%);
+
+  --prism-cyan:#2a7fff;
+  --prism-lime:#2aff2a;
+  --prism-red:#ff2a2a;
+
+  --font-display:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+
+  --sidebar-w:240px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--void-deep);
+  color:var(--text-body);
+  font-family:var(--font-mono);
+  font-size:14px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--status-green);color:var(--void-deep);}
+a{color:inherit;text-decoration:none;}
+button{font-family:var(--font-mono);cursor:pointer;border:none;background:none;color:inherit;}
+input,select,textarea{font-family:var(--font-mono);background:none;border:none;color:var(--text-primary);outline:none;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:var(--void-abyss);}
+::-webkit-scrollbar-thumb{background:var(--orb-surface-hover);border-radius:8px;}
+:focus-visible{outline:2px solid var(--border-active);outline-offset:2px;border-radius:4px;}
+
+.hidden{display:none !important;}
+
+.eyebrow{
+  font-family:var(--font-mono);font-size:11px;font-weight:400;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);
+}
+.display-title{
+  font-family:var(--font-display);font-size:48px;font-weight:500;
+  line-height:1.0;letter-spacing:-0.02em;color:var(--text-primary);
+}
+.card-title{
+  font-family:var(--font-display);font-size:20px;font-weight:500;
+  line-height:1.3;letter-spacing:-0.01em;color:var(--text-primary);
+}
+.data-value{
+  font-family:var(--font-display);font-size:36px;font-weight:500;color:#fde9ff;
+}
+
+/* ---------- buttons ---------- */
+.btn{
+  font-family:var(--font-mono);font-size:12px;font-weight:500;
+  letter-spacing:.04em;padding:10px 20px;border-radius:6px;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:all .2s ease;white-space:nowrap;
+}
+.btn-aurora{
+  background:var(--aurora-gradient);
+  background-size:200% 100%;
+  background-position:0% 0%;
+  color:#022825;border-radius:9999px;font-weight:600;
+}
+.btn-aurora:hover{background-position:100% 0%;transform:translateY(-1px);}
+.btn-ghost{
+  border:1px solid var(--border-subtle);color:var(--text-body);
+  background:transparent;
+}
+.btn-ghost:hover{border-color:var(--border-active);color:var(--text-primary);background:var(--orb-surface);}
+.btn-ghost-red{border:1px solid rgba(255,95,126,.35);color:var(--status-red);}
+.btn-ghost-red:hover{background:rgba(255,95,126,.08);}
+.btn-sm{padding:6px 14px;font-size:11px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ---------- layout shell ---------- */
+#app{display:flex;min-height:100vh;}
+
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;background:var(--void-abyss);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;
+  border-right:1px solid var(--border-subtle);z-index:40;
+}
+.sidebar-brand{
+  display:flex;align-items:center;gap:10px;padding:24px 20px;
+  border-bottom:1px solid var(--border-subtle);
+}
+.sidebar-brand canvas{display:block;}
+.sidebar-brand span{font-family:var(--font-display);font-size:19px;font-weight:500;color:var(--text-primary);letter-spacing:-.01em;}
+
+.nav{flex:1;padding:20px 12px;display:flex;flex-direction:column;gap:2px;}
+.nav-link{
+  display:flex;align-items:center;gap:12px;padding:11px 14px;
+  border-radius:6px;border-left:3px solid transparent;
+  font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);
+  transition:all .15s ease;
+}
+.nav-link i{width:16px;text-align:center;font-size:13px;}
+.nav-link:hover{color:var(--text-body);background:rgba(255,255,255,.03);}
+.nav-link.active{border-left-color:var(--status-green);color:var(--text-primary);background:var(--orb-surface);}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:12px;}
+.ws-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-muted);}
+.ws-dot{width:7px;height:7px;border-radius:50%;background:var(--status-red);flex-shrink:0;}
+.ws-dot.connected{background:var(--status-green);animation:pulseDot 2s ease-in-out infinite;}
+.ws-dot.connecting{background:var(--status-amber);}
+@keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:.35;}}
+.role-badge{
+  font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+  padding:3px 8px;border-radius:4px;border:1px solid var(--border-subtle);
+  color:var(--text-muted);width:fit-content;
+}
+
+/* ---------- main ---------- */
+.main-wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:rgba(6,5,29,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border-subtle);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 40px;
+}
+.topbar-titles .eyebrow{margin-bottom:4px;}
+.topbar-titles h1{font-family:var(--font-display);font-size:30px;font-weight:500;letter-spacing:-.01em;color:var(--text-primary);}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.user-chip{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-body);}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--orb-surface-hover);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:13px;color:var(--text-primary);}
+
+.content{padding:40px;flex:1;}
+.view{display:none;}
+.view.active{display:block;}
+.section-gap{margin-bottom:64px;}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--orb-surface);border-radius:16px;border:1px solid var(--border-subtle);
+  padding:24px;transition:background .2s ease, transform .2s ease;
+}
+.card.hoverable:hover{background:var(--orb-surface-hover);transform:translateY(-1px);}
+
+/* ---------- Today view ---------- */
+.orb-hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:40px;position:relative;}
+#orbCanvas{display:block;position:relative;z-index:1;}
+.orb-numbers{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;
+  z-index:5;width:150px;height:150px;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(circle, rgba(6,5,29,.78) 0%, rgba(6,5,29,.55) 55%, rgba(6,5,29,0) 78%);
+}
+.orb-numbers .n{font-family:var(--font-display);font-size:30px;font-weight:500;color:#fde9ff;line-height:1;text-shadow:0 2px 14px rgba(0,0,0,.7),0 0 4px rgba(0,0,0,.9);}
+.orb-numbers .lbl{font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-primary);margin-top:4px;text-shadow:0 1px 6px rgba(0,0,0,.8);}
+.orb-substats{display:flex;gap:28px;margin-top:4px;}
+.orb-substats div{text-align:center;}
+.orb-substats .v{font-family:var(--font-display);font-size:20px;color:var(--text-primary);}
+.orb-substats .l{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);}
+
+.date-selector{position:relative;display:inline-flex;margin:0 auto 32px;}
+.date-pill{
+  background:var(--orb-surface);border:1px solid var(--border-subtle);border-radius:9999px;
+  padding:9px 18px;font-size:12px;color:var(--text-body);display:flex;align-items:center;gap:8px;
+}
+.date-pill:hover{border-color:var(--border-active);}
+.date-popover{
+  position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--orb-surface-hover);border:1px solid var(--border-subtle);border-radius:12px;
+  padding:16px;width:260px;z-index:50;
+}
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:12px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;}
+.cal-grid span{font-size:10px;color:var(--text-dim);padding:4px 0;}
+.cal-grid button{font-size:11px;padding:6px 0;border-radius:4px;color:var(--text-body);}
+.cal-grid button:hover{background:var(--orb-surface);}
+.cal-grid button.today-cell{border:1px solid var(--status-green);}
+
+.sessions-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
+.session-card h3{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.pill-list{display:flex;flex-wrap:wrap;gap:10px;}
+.worker-pill{
+  display:flex;align-items:center;gap:8px;background:var(--void-abyss);
+  border:1px solid var(--border-subtle);border-radius:6px;padding:6px 12px 6px 6px;
+}
+.pill-thumb{width:26px;height:26px;border-radius:50%;object-fit:cover;border:2px solid var(--status-green);background:var(--orb-surface-hover);}
+.worker-pill span{font-size:12px;color:var(--text-body);}
+.empty-inline{color:var(--text-dim);font-size:12px;font-style:normal;}
+
+.uncertain-card{border-left:3px solid var(--status-amber);}
+.uncertain-card h3{color:var(--status-amber);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+@keyframes amberPulse{0%,100%{box-shadow:0 0 8px rgba(240,177,0,.2);}50%{box-shadow:0 0 16px rgba(240,177,0,.5);}}
+.uncertain-item{
+  display:flex;align-items:center;gap:14px;background:var(--void-abyss);border-radius:10px;
+  padding:12px;margin-bottom:10px;animation:amberPulse 2.4s ease-in-out infinite;
+}
+.uncertain-item img{width:48px;height:48px;border-radius:8px;object-fit:cover;}
+.uncertain-meta{flex:1;font-size:12px;}
+.uncertain-meta .name{color:var(--text-primary);}
+.uncertain-meta .pct{color:var(--status-amber);}
+.uncertain-actions{display:flex;gap:8px;}
+
+.upload-panel{display:flex;flex-wrap:wrap;align-items:center;gap:14px;}
+.select-wrap{position:relative;}
+.select-wrap select{
+  appearance:none;background:var(--void-abyss);border:1px solid var(--border-subtle);
+  border-radius:6px;padding:9px 30px 9px 14px;font-size:12px;color:var(--text-body);
+}
+.select-wrap i{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text-muted);pointer-events:none;}
+.file-input-label{
+  background:var(--void-abyss);border:1px dashed var(--border-subtle);border-radius:6px;
+  padding:9px 16px;font-size:12px;color:var(--text-muted);display:inline-flex;align-items:center;gap:8px;
+}
+.file-input-label:hover{border-color:var(--border-active);color:var(--text-body);}
+
+/* ---------- Workers view ---------- */
+.workers-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.search-input{
+  background:var(--void-abyss);border:1px solid var(--border-subtle);border-radius:6px;
+  padding:9px 14px;font-size:12px;width:240px;
+}
+.worker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;}
+.worker-card{text-align:center;cursor:pointer;padding:24px 16px;}
+.worker-thumb{
+  width:100px;height:100px;border-radius:50%;object-fit:cover;margin:0 auto 14px;
+  border:3px solid var(--border-subtle);background:var(--orb-surface-hover);
+}
+.worker-thumb.recent{border-color:var(--status-green);}
+.worker-card:hover .worker-thumb.recent{box-shadow:0 0 0 4px rgba(45,212,167,.15);}
+.worker-card .card-title{font-size:16px;margin-bottom:4px;}
+.worker-card .cap{font-size:10px;color:var(--text-muted);}
+
+.fab{
+  position:fixed;bottom:36px;right:36px;width:56px;height:56px;border-radius:50%;
+  background:var(--aurora-gradient);color:#022825;font-size:22px;
+  display:flex;align-items:center;justify-content:center;z-index:35;
+  box-shadow:0 6px 24px rgba(0,0,0,.4);transition:transform .2s ease;
+}
+.fab:hover{transform:scale(1.06);}
+
+/* ---------- Modals ---------- */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(1,3,10,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;
+}
+.modal{
+  background:var(--orb-surface);border:1px solid var(--border-subtle);border-radius:16px;
+  padding:28px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;
+}
+.modal.modal-lg{max-width:760px;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.modal-close{font-size:16px;color:var(--text-muted);padding:4px;}
+.modal-close:hover{color:var(--text-primary);}
+
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px;}
+.field input[type=text],.field input[type=password],.field input[type=number],.field input[type=date]{
+  width:100%;background:var(--void-abyss);border:1px solid var(--border-subtle);border-radius:6px;
+  padding:10px 12px;font-size:13px;color:var(--text-primary);
+}
+.field input:focus{border-color:var(--border-active);}
+.dropzone{
+  border:1px dashed var(--border-subtle);border-radius:10px;padding:28px;text-align:center;
+  color:var(--text-muted);font-size:12px;
+}
+.dropzone:hover{border-color:var(--border-active);}
+.dropzone i{font-size:20px;display:block;margin-bottom:8px;}
+
+.stats-row{display:flex;gap:16px;margin:20px 0;}
+.stat-box{flex:1;background:var(--void-abyss);border-radius:10px;padding:16px;text-align:center;}
+.stat-box .data-value{font-size:28px;}
+.stat-box.green .data-value{color:var(--status-green);}
+.stat-box.amber .data-value{color:var(--status-amber);}
+.stat-box.red .data-value{color:var(--status-red);}
+.stat-box .l{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-top:4px;}
+
+.audit-list{display:flex;flex-direction:column;gap:8px;font-size:11px;color:var(--text-muted);}
+.audit-list li{list-style:none;border-left:2px solid var(--border-subtle);padding-left:10px;}
+
+/* ---------- Calendar view ---------- */
+.cal-nav{display:flex;align-items:center;gap:14px;margin-bottom:24px;}
+.cal-nav button{padding:6px 10px;border-radius:6px;border:1px solid var(--border-subtle);}
+.cal-nav button:hover{background:var(--orb-surface);}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+.month-cell{
+  background:var(--orb-surface);border-radius:10px;padding:10px;min-height:86px;
+  border:1px solid var(--border-subtle);position:relative;cursor:pointer;
+  display:flex;flex-direction:column;
+}
+.month-cell:hover{background:var(--orb-surface-hover);}
+.month-cell .daynum{font-size:12px;color:var(--text-body);}
+.month-cell.other-month{opacity:.3;}
+.month-cell.has-note{min-height:132px;border-color:rgba(45,212,167,.4);}
+.mini-bars{display:flex;gap:3px;align-items:flex-end;height:30px;margin-top:8px;}
+.mini-bars .bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;}
+.mini-bars .bar.am{background:var(--status-amber);}
+.mini-bars .bar.pm{background:var(--prism-cyan);}
+.note-dot{position:absolute;top:10px;right:10px;width:6px;height:6px;border-radius:50%;background:var(--status-green);}
+.note-banner{
+  margin-top:8px;font-size:11.5px;line-height:1.4;color:#eafff9;
+  background:rgba(45,212,167,.14);border:1px solid rgba(45,212,167,.35);
+  border-radius:6px;padding:7px 9px;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;white-space:normal;word-break:break-word;
+}
+/* ---------- Reports view ---------- */
+.report-form{max-width:520px;display:flex;flex-direction:column;gap:16px;}
+.report-row{display:flex;gap:12px;}
+.checkbox-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-body);}
+.checkbox-row input{width:16px;height:16px;accent-color:var(--status-green);}
+.download-link{
+  display:flex;align-items:center;gap:10px;background:var(--void-abyss);border-radius:8px;
+  padding:12px 16px;font-size:12px;color:var(--status-green);margin-top:8px;
+}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(45,212,167,.5);}100%{box-shadow:0 0 0 10px rgba(45,212,167,0);}}
+.ping-dot{width:8px;height:8px;border-radius:50%;background:var(--status-green);animation:ping 1.5s ease-out infinite;}
+
+/* ---------- Gallery view ---------- */
+.gallery-filters{display:flex;gap:12px;align-items:center;margin-bottom:24px;}
+.count-badge{font-size:11px;color:var(--text-muted);}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;}
+.photo-thumb{
+  aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--border-subtle);
+  cursor:pointer;background:var(--orb-surface);
+}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-overlay{
+  position:absolute;inset:0;background:rgba(1,3,10,.55);opacity:0;transition:opacity .2s ease;
+  display:flex;align-items:flex-end;padding:10px;
+}
+.photo-thumb:hover .photo-overlay{opacity:1;}
+.face-badge{font-size:10px;background:var(--orb-surface-hover);padding:3px 8px;border-radius:4px;color:var(--text-body);}
+.trash-icon{position:absolute;top:8px;right:8px;color:var(--status-red);font-size:12px;opacity:0;transition:opacity .2s;}
+.photo-thumb:hover .trash-icon{opacity:1;}
+
+.face-pill{display:flex;align-items:center;gap:10px;background:var(--void-abyss);border-radius:8px;padding:8px 10px;margin-bottom:8px;}
+.face-pill img{width:32px;height:32px;border-radius:50%;object-fit:cover;}
+.face-pill .meta{flex:1;font-size:11px;}
+
+/* ---------- Backup/Users view ---------- */
+.subtabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid var(--border-subtle);}
+.subtab{padding:10px 4px;font-size:12px;color:var(--text-muted);border-bottom:2px solid transparent;margin-right:20px;}
+.subtab.active{color:var(--text-primary);border-color:var(--status-green);}
+.subtab-panel{display:none;}
+.subtab-panel.active{display:block;}
+.status-line{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);margin-bottom:16px;}
+.status-line .dot{width:7px;height:7px;border-radius:50%;background:var(--status-red);}
+.status-line .dot.ok{background:var(--status-green);}
+
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;padding:10px 12px;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:.08em;border-bottom:1px solid var(--border-subtle);}
+td{padding:12px;border-bottom:1px solid var(--border-subtle);color:var(--text-body);}
+
+/* ---------- Toasts ---------- */
+#toastWrap{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:200;}
+.toast{
+  background:var(--orb-surface-hover);border-left:3px solid var(--status-green);border-radius:8px;
+  padding:12px 18px;font-size:12px;color:var(--text-primary);min-width:240px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.toast.error{border-color:var(--status-red);}
+.toast.warn{border-color:var(--status-amber);}
+
+/* ---------- overlay loading ---------- */
+#globalOverlay{
+  position:fixed;inset:0;background:rgba(6,5,29,.9);z-index:300;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+.overlay-text{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;}
+
+/* ---------- empty states ---------- */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-dim);}
+.empty-state i{font-size:26px;margin-bottom:12px;display:block;}
+.empty-state p{font-size:12px;}
+
+/* ---------- Auth screens ---------- */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.auth-card{width:100%;max-width:380px;background:var(--orb-surface);border:1px solid var(--border-subtle);border-radius:16px;padding:36px;}
+.auth-card .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:28px;}
+.auth-card .brand span{font-family:var(--font-display);font-size:20px;color:var(--text-primary);}
+.auth-card h2{font-family:var(--font-display);font-size:22px;font-weight:500;color:var(--text-primary);margin-bottom:6px;text-align:center;}
+.auth-card p.sub{text-align:center;font-size:11px;color:var(--text-muted);margin-bottom:24px;}
+.auth-error{color:var(--status-red);font-size:11px;margin-bottom:12px;min-height:14px;}
+.auth-card .btn{width:100%;justify-content:center;margin-top:6px;}
+
+/* ---------- responsive ---------- */
+@media (max-width:980px){
+  .sidebar{width:100%;height:64px;top:auto;bottom:0;flex-direction:row;border-right:none;border-top:1px solid var(--border-subtle);}
+  .sidebar-brand,.sidebar-footer{display:none;}
+  .nav{flex-direction:row;padding:8px;overflow-x:auto;}
+  .nav-link{flex-direction:column;gap:4px;border-left:none;border-top:3px solid transparent;font-size:9px;padding:8px 10px;white-space:nowrap;}
+  .nav-link.active{border-top-color:var(--status-green);border-left-color:transparent;}
+  .main-wrap{margin-left:0;padding-bottom:64px;}
+  .topbar{padding:16px 20px;}
+  .content{padding:20px;}
+  .sessions-grid{grid-template-columns:1fr;}
+  .display-title{font-size:32px;}
+}
+.uncertain-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.worker-select-wrap{position:relative;flex:1;min-width:160px;}
+.worker-select-input{
+  width:100%;background:var(--void-abyss);border:1px solid var(--border-subtle);border-radius:6px;
+  padding:8px 10px;font-size:12px;color:var(--text-primary);
+}
+.worker-select-input:focus{border-color:var(--border-active);}
+.worker-select-dropdown{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;
+  background:var(--orb-surface-hover);border:1px solid var(--border-subtle);border-radius:8px;
+  max-height:180px;overflow-y:auto;z-index:60;
+  box-shadow:0 8px 20px rgba(0,0,0,.4);
+}
+.worker-select-option{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12px;cursor:pointer;}
+.worker-select-option:hover{background:var(--orb-surface);}
+.worker-select-option img{width:22px;height:22px;border-radius:50%;object-fit:cover;background:var(--orb-surface-hover);}
+.worker-select-empty{padding:8px 10px;font-size:11px;color:var(--text-dim);}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+}
+</style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+<body>
 
-  <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <i class="fa-solid font-bold text-2xl fa-id-card-clip"></i>
-        <h1 class="text-xl md:text-2xl font-bold tracking-wide">Kshirsagar Group Attendance</h1>
-      </div>
-      <div class="flex items-center space-x-4 mt-2 sm:mt-0">
-        <span id="wsStatus" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500 text-slate-900">
-          <span class="w-2 h-2 mr-1.5 rounded-full bg-slate-900 animate-pulse"></span> Connecting...
-        </span>
-        <button onclick="openPairModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 shadow">
-          <i class="fa-solid fa-qrcode"></i> Pair Mobile
-        </button>
-      </div>
-    </div>
-  </header>
+<!-- ===================== GLOBAL OVERLAY ===================== -->
+<div id="globalOverlay" class="hidden">
+  <canvas id="overlayOrb" width="80" height="80"></canvas>
+  <div class="overlay-text" id="overlayText">Processing…</div>
+</div>
 
-  <div class="bg-white border-b border-slate-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 flex space-x-8">
-      <button id="tabToday" onclick="switchTab('today')" class="py-3.5 px-1 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2">
-        <i class="fa-solid fa-calendar-day"></i> Today's Attendance
-      </button>
-      <button id="tabWorkers" onclick="switchTab('workers')" class="py-3.5 px-1 font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2">
-        <i class="fa-solid fa-users"></i> Manage Workers
-      </button>
-      <button id="tabReports" onclick="switchTab('reports')" class="py-3.5 px-1 font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2">
-        <i class="fa-solid fa-file-excel"></i> Reports & Salary
-      </button>
-    </div>
+<!-- ===================== TOASTS ===================== -->
+<div id="toastWrap"></div>
+
+<!-- ===================== AUTH SCREENS ===================== -->
+<div id="authScreen" class="auth-wrap hidden">
+  <div class="auth-card">
+    <div class="brand"><canvas id="authOrbIcon" width="30" height="30"></canvas><span>Attendance-PC</span></div>
+    <h2 id="authTitle">Sign in</h2>
+    <p class="sub" id="authSub">Access the site dashboard</p>
+    <div class="auth-error" id="authError"></div>
+    <div class="field"><label>Username</label><input type="text" id="authUser" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input type="password" id="authPass" autocomplete="current-password"></div>
+    <button class="btn btn-aurora" id="authSubmit" style="width:100%">Sign in</button>
   </div>
+</div>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
-
-    <section id="viewToday" class="space-y-6">
-      <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-        <div>
-          <h2 class="text-lg font-bold text-slate-800">Attendance Summary</h2>
-          <p id="currentDateDisplay" class="text-sm text-slate-500">Loading date...</p>
-        </div>
-        <div class="flex items-center gap-3 mt-2 sm:mt-0">
-          <label for="datePicker" class="text-sm font-medium text-slate-600">View Date:</label>
-          <input type="date" id="datePicker" onchange="loadTodayData(this.value)" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
-        </div>
-      </div>
-
-      <div id="uncertainSection" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 shadow-sm">
-        <h3 class="text-amber-800 font-bold text-md flex items-center gap-2 mb-3">
-          <i class="fa-solid fa-triangle-exclamation"></i> Action Required: Uncertain Face Matches
-        </h3>
-        <div id="uncertainList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div class="bg-slate-800 text-white px-5 py-3.5 flex justify-between items-center">
-            <span class="font-bold text-md flex items-center gap-2"><i class="fa-solid fa-sun text-amber-400"></i> Morning Session</span>
-            <span id="morningCount" class="bg-slate-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">0 Present</span>
-          </div>
-          <div id="morningList" class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 min-h-[160px] align-content-start"></div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div class="bg-indigo-900 text-white px-5 py-3.5 flex justify-between items-center">
-            <span class="font-bold text-md flex items-center gap-2"><i class="fa-solid fa-moon text-indigo-300"></i> Evening Session</span>
-            <span id="eveningCount" class="bg-indigo-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">0 Present</span>
-          </div>
-          <div id="eveningList" class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 min-h-[160px] align-content-start"></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="viewWorkers" class="hidden space-y-6">
-      <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-        <h2 class="text-lg font-bold text-slate-800">Enrolled Construction Workers</h2>
-        <button onclick="openEnrollModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow">
-          <i class="fa-solid fa-user-plus"></i> Enroll New Worker
-        </button>
-      </div>
-
-      <div id="workersGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
-    </section>
-
-    <section id="viewReports" class="hidden space-y-6">
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-2xl mx-auto space-y-6">
-        <h2 class="text-xl font-bold text-slate-800 border-b pb-3"><i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i>Generate Excel Attendance Report</h2>
-
-        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-          <label class="block text-sm font-bold text-slate-700">Configured Daily Wage (₹)</label>
-          <div class="flex gap-3">
-            <input type="number" id="dailyWageInput" step="10" min="1" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full outline-none focus:ring-2 focus:ring-indigo-500" />
-            <button onclick="saveDailyWage()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Save</button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-            <input type="date" id="reportStartDate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-            <input type="date" id="reportEndDate" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
-          </div>
-        </div>
-
-        <button onclick="generateReport()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg font-bold transition flex justify-center items-center gap-2 shadow">
-          <i class="fa-solid fa-download"></i> Generate & Download Excel
-        </button>
-      </div>
-    </section>
-
-  </main>
-
-  <div id="pairModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
-      <h3 class="text-xl font-bold text-slate-800">Scan to Pair Phone</h3>
-      <p class="text-xs text-slate-500">Scan this QR code using your phone camera to open the mobile attendance uploader on your local network.</p>
-      <div class="flex justify-center p-3 bg-slate-50 rounded-xl border border-slate-200">
-        <img id="qrImage" src="" alt="Pairing QR Code" class="w-48 h-48 object-contain" />
-      </div>
-      <p id="pairUrlText" class="text-xs font-mono text-indigo-600 break-all bg-indigo-50 p-2 rounded"></p>
-      <button onclick="closePairModal()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg text-sm transition">Close</button>
+<!-- ===================== APP SHELL ===================== -->
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <canvas id="brandOrb" width="30" height="30"></canvas>
+      <span>Attendance-PC</span>
     </div>
-  </div>
-
-  <div id="enrollModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-      <h3 class="text-xl font-bold text-slate-800">Enroll New Worker</h3>
-      <form id="enrollForm" onsubmit="handleEnrollWorker(event)" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Worker Full Name</label>
-          <input type="text" id="workerNameInput" required placeholder="e.g. Ramesh Kumar" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Clear Frontal Photos (2 - 3 photos)</label>
-          <input type="file" id="workerPhotosInput" multiple accept="image/*" required class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-        </div>
-        <div class="flex gap-3 pt-2">
-          <button type="button" onclick="closeEnrollModal()" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 rounded-lg text-sm transition">Cancel</button>
-          <button type="submit" id="enrollSubmitBtn" class="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 rounded-lg text-sm transition">Enroll</button>
-        </div>
-      </form>
+    <nav class="nav">
+      <a class="nav-link active" data-view="today"><i class="fa-solid fa-circle-dot"></i>Today</a>
+      <a class="nav-link" data-view="workers"><i class="fa-solid fa-people-group"></i>Workers</a>
+      <a class="nav-link" data-view="calendar"><i class="fa-solid fa-calendar-days"></i>Calendar</a>
+      <a class="nav-link" data-view="reports"><i class="fa-solid fa-file-invoice-dollar"></i>Reports</a>
+      <a class="nav-link" data-view="gallery"><i class="fa-solid fa-images"></i>Gallery</a>
+      <a class="nav-link" data-view="backup" data-role="admin-only"><i class="fa-solid fa-cloud-arrow-up"></i>Backup &amp; Sync</a>
+      <a class="nav-link" data-view="users" data-role="root-only"><i class="fa-solid fa-user-shield"></i>Users</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="ws-status"><span class="ws-dot" id="wsDot"></span><span id="wsLabel">Connecting…</span></div>
+      <div class="role-badge" id="roleBadge">—</div>
     </div>
-  </div>
+  </aside>
 
-  <script>
-    let ws = null;
-    let selectedDate = new Date().toISOString().split('T')[0];
-
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('datePicker').value = selectedDate;
-      document.getElementById('reportStartDate').value = selectedDate;
-      document.getElementById('reportEndDate').value = selectedDate;
-      
-      loadTodayData(selectedDate);
-      loadDailyWage();
-      initWebSocket();
-    });
-
-    function initWebSocket() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${protocol}//${window.location.host}/api/today/ws`);
-
-      ws.onopen = () => {
-        const status = document.getElementById('wsStatus');
-        status.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white";
-        status.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-white animate-pulse"></span> Live Online`;
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'attendance_update' && payload.data) {
-            renderAttendance(payload.data);
-          }
-        } catch (e) {
-          console.error("WS Parse Error:", e);
-        }
-      };
-
-      ws.onclose = () => {
-        const status = document.getElementById('wsStatus');
-        status.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500 text-slate-900";
-        status.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-slate-900 animate-pulse"></span> Reconnecting...`;
-        setTimeout(initWebSocket, 3000);
-      };
-    }
-
-    async function loadTodayData(dateStr) {
-      selectedDate = dateStr;
-      try {
-        const res = await fetch(`/api/today?day=${dateStr}`);
-        if (!res.ok) throw new Error("Failed to load attendance");
-        const data = await res.json();
-        renderAttendance(data);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function renderAttendance(data) {
-      document.getElementById('currentDateDisplay').innerText = `Date: ${data.date} | Total Workers: ${data.total_workers}`;
-      
-      // Render Morning
-      const morningEl = document.getElementById('morningList');
-      document.getElementById('morningCount').innerText = `${data.morning.length} Present`;
-      morningEl.innerHTML = data.morning.length ? data.morning.map(w => workerBadge(w)).join('') : emptyBadge('No workers present');
-
-      // Render Evening
-      const eveningEl = document.getElementById('eveningList');
-      document.getElementById('eveningCount').innerText = `${data.evening.length} Present`;
-      eveningEl.innerHTML = data.evening.length ? data.evening.map(w => workerBadge(w)).join('') : emptyBadge('No workers present');
-
-      // Render Uncertain
-      const uncertainSec = document.getElementById('uncertainSection');
-      const uncertainEl = document.getElementById('uncertainList');
-      if (data.uncertain && data.uncertain.length > 0) {
-        uncertainSec.classList.remove('hidden');
-        uncertainEl.innerHTML = data.uncertain.map(u => uncertainCard(u)).join('');
-      } else {
-        uncertainSec.classList.add('hidden');
-      }
-    }
-
-    function workerBadge(w) {
-      const thumb = w.thumbnail_path ? `/${w.thumbnail_path}` : 'https://via.placeholder.com/100';
-      return `
-        <div class="flex items-center space-x-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
-          <img src="${thumb}" class="w-9 h-9 rounded-full object-cover border" />
-          <span class="text-xs font-bold text-slate-700 truncate">${w.name}</span>
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-titles">
+        <div class="eyebrow" id="viewEyebrow">Live floor</div>
+        <h1 id="viewTitle">Today</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-aurora btn-sm" id="pairBtn"><i class="fa-solid fa-qrcode"></i>Pair mobile</button>
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">?</div>
+          <span id="userName">—</span>
         </div>
-      `;
-    }
+        <button class="btn btn-ghost btn-sm" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+      </div>
+    </header>
 
-    function emptyBadge(msg) {
-      return `<div class="col-span-full text-center py-8 text-slate-400 text-sm italic">${msg}</div>`;
-    }
+    <main class="content">
 
-    function uncertainCard(u) {
-      return `
-        <div class="bg-white p-3 rounded-lg border border-amber-200 shadow-sm flex items-center space-x-3">
-          <img src="/${u.face_crop_path}" class="w-14 h-14 rounded-lg object-cover border" />
-          <div class="flex-grow min-w-0">
-            <p class="text-xs font-bold text-slate-800">Suggested: ${u.suggested_worker_name || 'Unknown'}</p>
-            <p class="text-[10px] text-slate-500 uppercase">${u.session} session</p>
-            <div class="flex gap-2 mt-2">
-              <button onclick="confirmUncertain(${u.id}, ${u.suggested_worker_id})" class="bg-emerald-600 text-white text-[11px] font-semibold px-2 py-1 rounded hover:bg-emerald-500">Confirm</button>
-              <button onclick="confirmUncertain(${u.id}, null)" class="bg-slate-200 text-slate-700 text-[11px] font-semibold px-2 py-1 rounded hover:bg-slate-300">Discard</button>
+      <!-- ===================== TODAY VIEW ===================== -->
+      <section class="view active" id="view-today">
+        <div class="orb-hero">
+          <div style="position:relative;">
+            <canvas id="orbCanvas" width="220" height="220"></canvas>
+            <div class="orb-numbers">
+              <div class="n" id="orbTotal">0</div>
+              <div class="lbl">Present today</div>
+            </div>
+          </div>
+          <div class="orb-substats">
+            <div><div class="v" id="orbAm">0</div><div class="l">Morning</div></div>
+            <div><div class="v" id="orbPm">0</div><div class="l">Evening</div></div>
+            <div><div class="v" id="orbUncertain">0</div><div class="l">Uncertain</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:center;position:relative;">
+          <button class="date-pill" id="dateSelectorBtn"><i class="fa-regular fa-calendar"></i><span id="dateSelectorLabel">Today</span><i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+          <div class="date-popover hidden" id="datePopover">
+            <div class="cal-header">
+              <button id="dpPrev"><i class="fa-solid fa-chevron-left"></i></button>
+              <span id="dpMonthLabel">—</span>
+              <button id="dpNext"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <div class="cal-grid" id="dpGrid"></div>
+          </div>
+        </div>
+
+        <div class="sessions-grid" style="margin-top:32px;">
+          <div class="card session-card">
+            <h3><i class="fa-solid fa-sun" style="color:var(--status-amber);"></i>Morning</h3>
+            <div class="pill-list" id="amPills"><span class="empty-inline">No attendance recorded</span></div>
+          </div>
+          <div class="card session-card">
+            <h3><i class="fa-solid fa-moon" style="color:var(--prism-cyan);"></i>Evening</h3>
+            <div class="pill-list" id="pmPills"><span class="empty-inline">No attendance recorded</span></div>
+          </div>
+        </div>
+
+        <div class="card uncertain-card section-gap" id="uncertainCard" style="margin-top:24px;">
+          <h3><i class="fa-solid fa-triangle-exclamation"></i>Action needed — unrecognized faces</h3>
+          <div id="uncertainList"><span class="empty-inline">Nothing to review</span></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom:16px;">Upload &amp; scan</h3>
+          <div class="upload-panel">
+            <div class="select-wrap">
+              <select id="uploadSession"><option value="morning">Morning</option><option value="evening">Evening</option></select>
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <button class="date-pill btn-sm" id="uploadDateBtn"><i class="fa-regular fa-calendar"></i><span id="uploadDateLabel">Today</span></button>
+            <label class="file-input-label" for="uploadFiles"><i class="fa-solid fa-paperclip"></i><span id="uploadFileLabel">Choose photos…</span></label>
+            <input type="file" id="uploadFiles" accept="image/*" multiple class="hidden">
+            <button class="btn btn-aurora" id="uploadSubmit"><i class="fa-solid fa-bolt"></i>Upload &amp; scan</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== WORKERS VIEW ===================== -->
+      <section class="view" id="view-workers">
+        <div class="workers-toolbar">
+          <input type="text" class="search-input" id="workerSearch" placeholder="Search workers…">
+          <span class="count-badge" id="workerCount">0 workers</span>
+        </div>
+        <div class="worker-grid" id="workerGrid"></div>
+      </section>
+
+      <!-- ===================== CALENDAR VIEW ===================== -->
+      <section class="view" id="view-calendar">
+        <div class="cal-nav">
+          <button id="calPrev"><i class="fa-solid fa-chevron-left"></i></button>
+          <span class="card-title" id="calMonthLabel" style="font-size:18px;">—</span>
+          <button id="calNext"><i class="fa-solid fa-chevron-right"></i></button>
+          <button class="btn btn-ghost btn-sm" id="calToday">Today</button>
+        </div>
+        <div class="month-grid" id="monthGrid"></div>
+      </section>
+
+      <!-- ===================== REPORTS VIEW ===================== -->
+      <section class="view" id="view-reports">
+        <div class="card" style="max-width:600px;">
+          <h3 class="card-title" style="margin-bottom:20px;">Generate payroll report</h3>
+          <div class="report-form">
+            <div class="report-row">
+              <div class="field" style="flex:1;"><label>From</label><input type="date" id="reportFrom"></div>
+              <div class="field" style="flex:1;"><label>To</label><input type="date" id="reportTo"></div>
+            </div>
+            <div class="field">
+              <label>Daily wage</label>
+              <input type="number" id="reportWage" placeholder="0">
+              <button type="button" class="btn btn-aurora" id="saveWageLink" style="width:100%;margin-top:10px;justify-content:center;"><i class="fa-solid fa-floppy-disk"></i>Save as default wage</button>
+            </div>
+            <div class="checkbox-row"><input type="checkbox" id="reportPhotos" checked><label for="reportPhotos">Include photo evidence</label></div>
+            <button class="btn btn-aurora" id="reportGenerate" style="width:fit-content;"><i class="fa-solid fa-download"></i>Generate &amp; download</button>
+            <div id="reportDownload"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== GALLERY VIEW ===================== -->
+      <section class="view" id="view-gallery">
+        <div class="gallery-filters">
+          <input type="date" id="galleryDate">
+          <div class="select-wrap">
+            <select id="gallerySession"><option value="">All sessions</option><option value="morning">Morning</option><option value="evening">Evening</option></select>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+          <span class="count-badge" id="galleryCount">0 photos</span>
+        </div>
+        <div class="photo-grid" id="photoGrid"></div>
+      </section>
+
+      <!-- ===================== BACKUP VIEW ===================== -->
+      <section class="view" id="view-backup">
+        <div class="subtabs">
+          <button class="subtab active" data-sub="local">Local backup</button>
+          <button class="subtab" data-sub="folder">Folder sync</button>
+          <button class="subtab" data-sub="gdrive">Google Drive</button>
+          <button class="subtab" data-sub="deletions">Deletion log</button>
+        </div>
+
+        <div class="subtab-panel active" id="sub-local">
+          <div class="card" style="max-width:520px;">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Automatic 15-minute snapshots keep a safety net running in the background.</p>
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-aurora" id="downloadBackup"><i class="fa-solid fa-download"></i>Download backup (.zip)</button>
+              <label class="btn btn-ghost" for="restoreFile"><i class="fa-solid fa-upload"></i>Restore</label>
+              <input type="file" id="restoreFile" accept=".zip" class="hidden">
             </div>
           </div>
         </div>
-      `;
-    }
 
-    async function confirmUncertain(uncertainId, workerId) {
-      try {
-        await fetch('/api/today/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uncertain_id: uncertainId, worker_id: workerId })
-        });
-        loadTodayData(selectedDate);
-      } catch (err) {
-        alert("Action failed. Please try again.");
-      }
-    }
-
-    function switchTab(tab) {
-      ['Today', 'Workers', 'Reports'].forEach(t => {
-        const btn = document.getElementById(`tab${t}`);
-        const view = document.getElementById(`view${t}`);
-        if (t.toLowerCase() === tab) {
-          btn.className = "py-3.5 px-1 font-semibold text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2";
-          view.classList.remove('hidden');
-        } else {
-          btn.className = "py-3.5 px-1 font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2";
-          view.classList.add('hidden');
-        }
-      });
-
-      if (tab === 'workers') loadWorkers();
-    }
-
-    async function loadWorkers() {
-      const grid = document.getElementById('workersGrid');
-      grid.innerHTML = '<div class="col-span-full text-center py-8 text-slate-500">Loading workers...</div>';
-      try {
-        const res = await fetch('/api/workers');
-        const data = await res.json();
-        if (!data.workers.length) {
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400">No workers enrolled yet.</div>';
-          return;
-        }
-        grid.innerHTML = data.workers.map(w => `
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center space-y-2">
-            <img src="${w.thumbnail_path ? '/' + w.thumbnail_path : 'https://via.placeholder.com/128'}" class="w-20 h-20 rounded-full object-cover border-2 border-indigo-100" />
-            <h3 class="font-bold text-slate-800 text-sm">${w.name}</h3>
-            <button onclick="deleteWorker(${w.id}, '${w.name}')" class="text-xs text-rose-600 hover:text-rose-800 font-semibold pt-1">
-              <i class="fa-solid fa-trash mr-1"></i> Delete
-            </button>
+        <div class="subtab-panel" id="sub-folder">
+          <div class="card" style="max-width:520px;">
+            <div class="field"><label>Folder path</label><input type="text" id="syncFolderPath" placeholder="/mnt/backup-drive"></div>
+            <button class="btn btn-ghost btn-sm" id="saveFolderPath">Save</button>
+            <div class="status-line" style="margin-top:18px;"><span class="dot" id="folderSyncDot"></span><span id="folderSyncLabel">Not synced</span></div>
+            <div style="display:flex;gap:10px;"><button class="btn btn-aurora btn-sm" id="folderPush">Push</button><button class="btn btn-ghost btn-sm" id="folderPull">Pull</button></div>
+            <div id="folderActivityLog" style="margin-top:16px;font-size:11px;color:var(--text-muted);"></div>
           </div>
-        `).join('');
-      } catch (e) {
-        grid.innerHTML = '<div class="col-span-full text-center py-8 text-rose-500">Failed to load workers.</div>';
+        </div>
+
+        <div class="subtab-panel" id="sub-gdrive">
+          <div class="card" style="max-width:520px;">
+            <div class="field"><label>OAuth client ID</label><input type="text" id="gdriveClientId"></div>
+            <div class="field"><label>OAuth client secret</label><input type="password" id="gdriveClientSecret"></div>
+            <div style="display:flex;gap:10px;margin-bottom:16px;">
+              <button class="btn btn-aurora btn-sm" id="gdriveConnect">Connect</button>
+              <button class="btn btn-ghost btn-sm" id="gdriveDisconnect">Disconnect</button>
+            </div>
+            <div class="status-line"><span class="dot" id="gdriveDot"></span><span id="gdriveLabel">Not connected</span></div>
+            <div style="display:flex;gap:10px;"><button class="btn btn-ghost btn-sm" id="gdrivePush">Push</button><button class="btn btn-ghost btn-sm" id="gdrivePull">Pull</button></div>
+          </div>
+        </div>
+
+        <div class="subtab-panel" id="sub-deletions">
+          <div class="card">
+            <table>
+              <thead><tr><th>When</th><th>Type</th><th>Item</th><th>Deleted by</th><th>Reason</th></tr></thead>
+              <tbody id="deletionsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== USERS VIEW ===================== -->
+      <section class="view" id="view-users">
+        <div class="card" style="margin-bottom:24px;">
+          <h3 class="card-title" style="margin-bottom:16px;">Add manager</h3>
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="margin:0;"><label>Username</label><input type="text" id="newUserName"></div>
+            <div class="field" style="margin:0;"><label>Password</label><input type="password" id="newUserPass"></div>
+            <button class="btn btn-aurora" id="addUserBtn">Add manager</button>
+          </div>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Username</th><th>Role</th><th>Created</th><th></th></tr></thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <button class="fab hidden" id="enrollFab"><i class="fa-solid fa-plus"></i></button>
+</div>
+
+<!-- ===================== MODAL: Enroll worker ===================== -->
+<div class="modal-backdrop hidden" id="modalEnroll">
+  <div class="modal">
+    <div class="modal-head"><span class="card-title">Enroll worker</span><button class="modal-close" data-close="modalEnroll"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="field"><label>Name</label><input type="text" id="enrollName"></div>
+    <div class="field">
+      <label>Photos</label>
+      <label class="dropzone" for="enrollFiles"><i class="fa-solid fa-cloud-arrow-up"></i>Drag photos here, or click to browse<input type="file" id="enrollFiles" accept="image/*" multiple class="hidden"></label>
+      <div id="enrollFileNames" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></div>
+    </div>
+    <button class="btn btn-aurora" id="enrollSubmit" style="width:100%;margin-top:10px;">Register worker</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Worker profile ===================== -->
+<div class="modal-backdrop hidden" id="modalProfile">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <img id="profileThumb" class="worker-thumb" style="width:56px;height:56px;margin:0;">
+        <div><div class="card-title" id="profileName">—</div><div class="cap" style="font-size:11px;color:var(--text-muted);" id="profileEnrolled">—</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-ghost-red btn-sm" id="profileDelete">Delete</button>
+        <button class="modal-close" data-close="modalProfile"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box green"><div class="data-value" id="statFull">0</div><div class="l">Full days</div></div>
+      <div class="stat-box amber"><div class="data-value" id="statHalf">0</div><div class="l">Half days</div></div>
+      <div class="stat-box red"><div class="data-value" id="statAbsent">0</div><div class="l">Absent</div></div>
+    </div>
+    <canvas id="profileChart" height="90"></canvas>
+    <h4 style="font-size:12px;color:var(--text-muted);margin:20px 0 10px;text-transform:uppercase;letter-spacing:.08em;">Photo evidence</h4>
+    <div class="photo-grid" id="profilePhotoGrid" style="grid-template-columns:repeat(auto-fill,minmax(80px,1fr));"></div>
+    <h4 style="font-size:12px;color:var(--text-muted);margin:20px 0 10px;text-transform:uppercase;letter-spacing:.08em;">Audit log</h4>
+    <ul class="audit-list" id="profileAuditLog"></ul>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Lightbox ===================== -->
+<div class="modal-backdrop hidden" id="modalLightbox">
+  <div class="modal modal-lg">
+    <div class="modal-head"><span class="card-title">Photo</span><button class="modal-close" data-close="modalLightbox"><i class="fa-solid fa-xmark"></i></button></div>
+    <img id="lightboxImg" style="width:100%;border-radius:10px;margin-bottom:16px;">
+    <div id="lightboxFaces"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Pairing QR ===================== -->
+<div class="modal-backdrop hidden" id="modalPair">
+  <div class="modal" style="text-align:center;">
+    <div class="modal-head"><span class="card-title">Pair mobile</span><button class="modal-close" data-close="modalPair"><i class="fa-solid fa-xmark"></i></button></div>
+    <img id="qrImage" style="width:220px;height:220px;margin:0 auto 16px;border-radius:10px;background:#fff;">
+    <div id="pairUrl" style="font-size:11px;color:var(--text-muted);word-break:break-all;margin-bottom:16px;"></div>
+    <button class="btn btn-ghost btn-sm" id="regenerateQr">Regenerate</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL: Calendar note ===================== -->
+<div class="modal-backdrop hidden" id="modalNote">
+  <div class="modal">
+    <div class="modal-head"><span class="card-title" id="noteModalDate">Day note</span><button class="modal-close" data-close="modalNote"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="field"><label>Note</label><textarea id="noteText" rows="4" style="width:100%;background:var(--void-abyss);border:1px solid var(--border-subtle);border-radius:6px;padding:10px;font-size:12px;color:var(--text-primary);"></textarea></div>
+    <button class="btn btn-aurora" id="noteSave">Save</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const API = '';
+const state = {
+  user: null,
+  role: null,
+  todayDate: new Date(),
+  uploadDate: new Date(),
+  calMonth: new Date(),
+  ws: null,
+  wsRetry: 1000,
+  workers: [],
+  currentSubtab: 'local',
+};
+
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function prettyDate(d){ return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+
+/* ============================================================
+   API HELPER
+   ============================================================ */
+async function api(path, opts={}){
+  opts.headers = opts.headers || {};
+  if(!(opts.body instanceof FormData) && opts.body){
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const res = await fetch(API + path, {credentials:'include', ...opts});
+  if(res.status === 401){ showAuth('login'); throw new Error('unauthorized'); }
+  if(!res.ok){
+    let msg = 'Request failed';
+    try{ const j = await res.json(); msg = j.detail || j.message || msg; }catch(e){}
+    throw new Error(msg);
+  }
+  const ct = res.headers.get('content-type') || '';
+  if(ct.includes('application/json')) return res.json();
+  return res;
+}
+
+/* ============================================================
+   TOASTS
+   ============================================================ */
+function toast(msg, type='ok'){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type==='error' ? ' error' : type==='warn' ? ' warn' : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  anime({targets:el, translateY:[20,0], opacity:[0,1], duration:300, easing:'easeOutCubic'});
+  setTimeout(()=>{
+    anime({targets:el, opacity:[1,0], duration:300, easing:'easeInCubic', complete:()=>el.remove()});
+  }, 3000);
+}
+
+function showOverlay(text){
+  document.getElementById('overlayText').textContent = text || 'Processing…';
+  document.getElementById('globalOverlay').classList.remove('hidden');
+}
+function hideOverlay(){ document.getElementById('globalOverlay').classList.add('hidden'); }
+
+/* ============================================================
+   PARTICLE ORB (Canvas)
+   ============================================================ */
+function makeOrb(canvasId, count, radius){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return null;
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const particles = [];
+  for(let i=0;i<count;i++){
+    const theta = Math.random()*Math.PI*2;
+    const phi = Math.acos(2*Math.random()-1);
+    particles.push({
+      theta, phi,
+      speed: 0.002 + Math.random()*0.003,
+      t: Math.random()
+    });
+  }
+  let scale = 1, targetScale = 1;
+  function lerpColor(t){
+    // teal (#00c9b8) -> lavender (#fde9ff)
+    const a=[0,201,184], b=[253,233,255];
+    const r = Math.round(a[0]+(b[0]-a[0])*t);
+    const g = Math.round(a[1]+(b[1]-a[1])*t);
+    const bl = Math.round(a[2]+(b[2]-a[2])*t);
+    return `rgb(${r},${g},${bl})`;
+  }
+  let rot = 0;
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    rot += 0.004;
+    scale += (targetScale - scale) * 0.08;
+    const pts = particles.map(p=>{
+      const theta = p.theta + rot;
+      const x = radius*Math.sin(p.phi)*Math.cos(theta);
+      const y = radius*Math.sin(p.phi)*Math.sin(theta);
+      const z = radius*Math.cos(p.phi);
+      const persp = (z+radius*1.6)/(radius*2.6);
+      return {x:x*scale, y:y*scale, z, persp, t:p.t};
+    }).sort((a,b)=>a.z-b.z);
+    pts.forEach(p=>{
+      const px = cx + p.x*persp2(p.persp);
+      const py = cy + p.y*persp2(p.persp);
+      const size = 0.6 + p.persp*1.8;
+      ctx.beginPath();
+      ctx.fillStyle = lerpColor(p.t*0.5 + p.persp*0.5);
+      ctx.globalAlpha = 0.35 + p.persp*0.65;
+      ctx.arc(px, py, size, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  }
+  function persp2(p){ return 0.7 + p*0.5; }
+  frame();
+  return { pulse(){ targetScale = 1.05; setTimeout(()=>targetScale=1,180); } };
+}
+let mainOrb;
+window.addEventListener('DOMContentLoaded', ()=>{
+  mainOrb = makeOrb('orbCanvas', 700, 70);
+  makeOrb('brandOrb', 60, 11);
+  makeOrb('authOrbIcon', 60, 11);
+  makeOrb('overlayOrb', 120, 30);
+});
+
+/* ============================================================
+   AUTH FLOW
+   ============================================================ */
+async function bootAuth(){
+  try{
+    const setup = await api('/api/auth/setup-status');
+    if(setup && setup.needs_setup){
+      showAuth('setup');
+      return;
+    }
+  }catch(e){ /* fall through to login check */ }
+  try{
+    const me = await api('/api/auth/me');
+    onAuthed(me.user || me);
+  }catch(e){
+    showAuth('login');
+  }
+}
+
+function showAuth(mode){
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('authTitle').textContent = mode==='setup' ? 'Create root account' : 'Sign in';
+  document.getElementById('authSub').textContent = mode==='setup' ? 'First-time setup for this device' : 'Access the site dashboard';
+  document.getElementById('authSubmit').dataset.mode = mode;
+  anime({targets:'.auth-card', opacity:[0,1], translateY:[12,0], duration:400, easing:'easeOutCubic'});
+}
+
+document.getElementById('authSubmit').addEventListener('click', async ()=>{
+  const mode = document.getElementById('authSubmit').dataset.mode || 'login';
+  const username = document.getElementById('authUser').value.trim();
+  const password = document.getElementById('authPass').value;
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  if(!username || !password){ errEl.textContent = 'Enter a username and password.'; return; }
+  try{
+    if(mode === 'setup'){
+      // /api/auth/setup only returns {success:true} — no session/role — so
+      // immediately log in with the same credentials to actually get one.
+      await api('/api/auth/setup', {method:'POST', body:{username, password}});
+      const me = await api('/api/auth/login', {method:'POST', body:{username, password}});
+      onAuthed(me);
+    } else {
+      const me = await api('/api/auth/login', {method:'POST', body:{username, password}});
+      onAuthed(me);
+    }
+  }catch(e){ errEl.textContent = e.message; }
+});
+
+function onAuthed(me){
+  state.user = me.username || 'user';
+  state.role = me.role || 'manager';
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('userName').textContent = state.user;
+  document.getElementById('userAvatar').textContent = state.user.slice(0,1).toUpperCase();
+  document.getElementById('roleBadge').textContent = state.role;
+  document.querySelectorAll('[data-role="admin-only"]').forEach(el=>{
+    el.classList.toggle('hidden', !(state.role==='manager' || state.role==='root'));
+  });
+  document.querySelectorAll('[data-role="root-only"]').forEach(el=>{
+    el.classList.toggle('hidden', state.role!=='root');
+  });
+  document.getElementById('enrollFab').classList.remove('hidden');
+  anime({targets:'.content', opacity:[0,1], translateY:[8,0], duration:400, easing:'easeOutCubic'});
+  connectWebSocket();
+  loadToday();
+  loadWorkers();
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  try{ await api('/api/auth/logout', {method:'POST'}); }catch(e){}
+  location.reload();
+});
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const viewTitles = {
+  today:['Live floor','Today'],
+  workers:['Enrolment','Workers'],
+  calendar:['Overview','Calendar'],
+  reports:['Payroll','Reports'],
+  gallery:['Photo log','Gallery'],
+  backup:['Data safety','Backup & Sync'],
+  users:['Access','Users'],
+};
+document.querySelectorAll('.nav-link').forEach(link=>{
+  link.addEventListener('click', ()=>switchView(link.dataset.view));
+});
+function switchView(name){
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.toggle('active', l.dataset.view===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const target = document.getElementById('view-'+name);
+  target.classList.add('active');
+  document.getElementById('viewEyebrow').textContent = viewTitles[name][0];
+  document.getElementById('viewTitle').textContent = viewTitles[name][1];
+  document.getElementById('enrollFab').classList.toggle('hidden', name!=='workers');
+  anime({targets:target, opacity:[0,1], translateY:[8,0], duration:350, easing:'easeOutCubic'});
+  if(name==='workers') loadWorkers();
+  if(name==='calendar') loadCalendar();
+  if(name==='gallery') loadGallery();
+  if(name==='backup') loadBackupStatus();
+  if(name==='users') loadUsers();
+}
+
+/* ============================================================
+   WEBSOCKET
+   ============================================================ */
+function connectWebSocket(){
+  const dot = document.getElementById('wsDot');
+  const label = document.getElementById('wsLabel');
+  dot.className = 'ws-dot connecting'; label.textContent = 'Connecting…';
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  let ws;
+  try{
+    ws = new WebSocket(`${proto}//${location.host}/api/today/ws`);
+  }catch(e){ scheduleReconnect(); return; }
+  state.ws = ws;
+  ws.onopen = ()=>{
+    dot.className = 'ws-dot connected'; label.textContent = 'Live';
+    state.wsRetry = 1000;
+  };
+  ws.onmessage = (evt)=>{
+    try{
+      const msg = JSON.parse(evt.data);
+      if(msg && msg.data) applyTodayData(msg.data, true);
+      if(mainOrb) mainOrb.pulse();
+    }catch(e){}
+  };
+  ws.onclose = ()=>{
+    dot.className = 'ws-dot'; label.textContent = 'Disconnected';
+    scheduleReconnect();
+  };
+  ws.onerror = ()=>{ ws.close(); };
+}
+function scheduleReconnect(){
+  setTimeout(connectWebSocket, state.wsRetry);
+  state.wsRetry = Math.min(state.wsRetry*2, 30000);
+}
+
+/* ============================================================
+   TODAY VIEW
+   ============================================================ */
+async function loadToday(){
+  try{
+    const data = await api(`/api/today?day=${fmtDate(state.todayDate)}`);
+    applyTodayData(data, false);
+  }catch(e){ toast('Could not load today\u2019s attendance', 'error'); }
+}
+
+function applyTodayData(data, animated){
+  const am = data.morning || [];
+  const pm = data.evening || [];
+  const uncertain = data.uncertain || [];
+  animateCount('orbTotal', am.length + pm.length);
+  animateCount('orbAm', am.length);
+  animateCount('orbPm', pm.length);
+  animateCount('orbUncertain', uncertain.length);
+  renderPills('amPills', am);
+  renderPills('pmPills', pm);
+  renderUncertain(uncertain);
+}
+function animateCount(id, val){
+  const el = document.getElementById(id);
+  const from = parseInt(el.textContent) || 0;
+  anime({targets:{v:from}, v:val, round:1, duration:600, easing:'easeOutCubic',
+    update:a=>{ el.textContent = Math.round(a.animations[0].currentValue); }});
+}
+function thumbUrl(path){ return path ? '/' + path : ''; }
+function renderPills(containerId, list){
+  const el = document.getElementById(containerId);
+  if(!list.length){ el.innerHTML = '<span class="empty-inline">No attendance recorded</span>'; return; }
+  el.innerHTML = list.map(w=>`
+    <div class="worker-pill">
+      <img class="pill-thumb" src="${thumbUrl(w.thumbnail_path)}" onerror="this.style.background='var(--orb-surface-hover)'">
+      <span>${escapeHtml(w.name||'Unknown')}</span>
+    </div>`).join('');
+  anime({targets: el.children, opacity:[0,1], translateY:[8,0], delay: anime.stagger(50), duration:400, easing:'easeOutCubic'});
+}
+function renderUncertain(list){
+  const el = document.getElementById('uncertainList');
+  if(!list.length){ el.innerHTML = '<span class="empty-inline">Nothing to review</span>'; return; }
+  ensureWorkersLoaded();
+  el.innerHTML = list.map(u=>`
+    <div class="uncertain-item" data-id="${u.id}">
+      <img src="${thumbUrl(u.face_crop_path)}">
+      <div class="uncertain-meta">
+        <div class="name">${escapeHtml(u.suggested_worker_name || 'Unrecognized face')}</div>
+        ${u.similarity!=null ? `<div class="pct">${Math.round(u.similarity*100)}% match</div>` : ''}
+      </div>
+      <div class="uncertain-actions">
+        <div class="worker-select-wrap">
+          <input type="text" class="worker-select-input" id="wsel-${u.id}"
+                 placeholder="Search worker…"
+                 value="${u.suggested_worker_name ? escapeHtml(u.suggested_worker_name) : ''}"
+                 data-selected-id="${u.suggested_worker_id!=null ? u.suggested_worker_id : ''}"
+                 oninput="onWorkerSelectInput(${u.id})"
+                 onfocus="onWorkerSelectInput(${u.id})">
+          <div class="worker-select-dropdown hidden" id="wdrop-${u.id}"></div>
+        </div>
+        <button class="btn btn-aurora btn-sm" onclick="confirmUncertainSelected(${u.id})">Confirm</button>
+        <button class="btn btn-ghost btn-sm" onclick="discardUncertain(${u.id})">Discard</button>
+      </div>
+    </div>`).join('');
+}
+
+async function ensureWorkersLoaded(){
+  if(!state.workers.length){
+    try{ await loadWorkers(); }catch(e){}
+  }
+}
+
+function onWorkerSelectInput(uncertainId){
+  const input = document.getElementById(`wsel-${uncertainId}`);
+  const dropdown = document.getElementById(`wdrop-${uncertainId}`);
+  if(!input || !dropdown) return;
+  const q = input.value.trim().toLowerCase();
+  const matches = q
+    ? state.workers.filter(w=>w.name.toLowerCase().includes(q)).slice(0,8)
+    : state.workers.slice(0,8);
+  dropdown.innerHTML = matches.length
+    ? matches.map(w=>`
+        <div class="worker-select-option" onclick="pickWorkerForUncertain(${uncertainId}, ${w.id}, '${escapeHtml(w.name).replace(/'/g,"&#39;")}')">
+          <img src="${thumbUrl(w.thumbnail_path)}" onerror="this.style.background='var(--orb-surface-hover)'">
+          <span>${escapeHtml(w.name)}</span>
+        </div>`).join('')
+    : '<div class="worker-select-empty">No matching workers</div>';
+  dropdown.classList.remove('hidden');
+  // Selection is cleared whenever the text changes and hasn't been
+  // re-confirmed by picking an option — prevents accidentally confirming
+  // against a stale worker_id after the user edits the text.
+  input.dataset.selectedId = '';
+}
+
+function pickWorkerForUncertain(uncertainId, workerId, name){
+  const input = document.getElementById(`wsel-${uncertainId}`);
+  input.value = name;
+  input.dataset.selectedId = workerId;
+  document.getElementById(`wdrop-${uncertainId}`).classList.add('hidden');
+}
+
+document.addEventListener('click', (e)=>{
+  document.querySelectorAll('.worker-select-wrap').forEach(wrap=>{
+    if(!wrap.contains(e.target)){
+      const dd = wrap.querySelector('.worker-select-dropdown');
+      if(dd) dd.classList.add('hidden');
+    }
+  });
+});
+
+async function confirmUncertainSelected(id){
+  const input = document.getElementById(`wsel-${id}`);
+  const workerId = input && input.dataset.selectedId ? parseInt(input.dataset.selectedId, 10) : null;
+  if(!workerId){ toast('Pick a worker from the dropdown first', 'warn'); return; }
+  try{
+    await api('/api/today/confirm', {method:'POST', body:{match_id:id, confirm:true, worker_id:workerId}});
+    toast('Attendance confirmed');
+    loadToday();
+  }catch(e){ toast(e.message, 'error'); }
+}
+
+async function discardUncertain(id){
+  try{
+    await api('/api/today/confirm', {method:'POST', body:{match_id:id, confirm:false}});
+    toast('Discarded');
+    loadToday();
+  }catch(e){ toast(e.message, 'error'); }
+}
+
+// Date selector popover
+document.getElementById('dateSelectorBtn').addEventListener('click', ()=>{
+  const pop = document.getElementById('datePopover');
+  pop.classList.toggle('hidden');
+  renderDatePopover();
+});
+document.addEventListener('click', (e)=>{
+  const pop = document.getElementById('datePopover');
+  if(!pop.contains(e.target) && e.target.id!=='dateSelectorBtn' && !document.getElementById('dateSelectorBtn').contains(e.target)){
+    pop.classList.add('hidden');
+  }
+});
+let dpViewMonth = new Date();
+function renderDatePopover(){
+  document.getElementById('dpMonthLabel').textContent = dpViewMonth.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+  const grid = document.getElementById('dpGrid');
+  const first = new Date(dpViewMonth.getFullYear(), dpViewMonth.getMonth(), 1);
+  const startDay = first.getDay();
+  const daysInMonth = new Date(dpViewMonth.getFullYear(), dpViewMonth.getMonth()+1, 0).getDate();
+  let html = ['S','M','T','W','T','F','S'].map(d=>`<span>${d}</span>`).join('');
+  for(let i=0;i<startDay;i++) html += '<button></button>';
+  const today = new Date();
+  for(let d=1; d<=daysInMonth; d++){
+    const cellDate = new Date(dpViewMonth.getFullYear(), dpViewMonth.getMonth(), d);
+    const isToday = cellDate.toDateString()===today.toDateString();
+    html += `<button class="${isToday?'today-cell':''}" onclick="pickDate(${dpViewMonth.getFullYear()},${dpViewMonth.getMonth()},${d})">${d}</button>`;
+  }
+  grid.innerHTML = html;
+}
+document.getElementById('dpPrev').addEventListener('click', ()=>{ dpViewMonth.setMonth(dpViewMonth.getMonth()-1); renderDatePopover(); });
+document.getElementById('dpNext').addEventListener('click', ()=>{ dpViewMonth.setMonth(dpViewMonth.getMonth()+1); renderDatePopover(); });
+function pickDate(y,m,d){
+  state.todayDate = new Date(y,m,d);
+  document.getElementById('dateSelectorLabel').textContent = prettyDate(state.todayDate);
+  document.getElementById('datePopover').classList.add('hidden');
+  loadToday();
+}
+
+document.getElementById('uploadDateBtn').addEventListener('click', ()=>{
+  const d = prompt('Enter date (YYYY-MM-DD):', fmtDate(state.uploadDate));
+  if(d){ state.uploadDate = new Date(d); document.getElementById('uploadDateLabel').textContent = prettyDate(state.uploadDate); }
+});
+document.getElementById('uploadFiles').addEventListener('change', (e)=>{
+  const n = e.target.files.length;
+  document.getElementById('uploadFileLabel').textContent = n ? `${n} photo${n>1?'s':''} selected` : 'Choose photos…';
+});
+document.getElementById('uploadSubmit').addEventListener('click', async ()=>{
+  const files = document.getElementById('uploadFiles').files;
+  if(!files.length){ toast('Choose at least one photo', 'warn'); return; }
+  const session = document.getElementById('uploadSession').value;
+  const date = fmtDate(state.uploadDate);
+  const batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  showOverlay('Scanning faces…');
+  let facesTotal = 0, matchedTotal = 0, errCount = 0;
+  try{
+    for(const f of files){
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('username', state.user || 'dashboard');
+      fd.append('session', session);
+      fd.append('timestamp', String(Date.now()));
+      fd.append('date', date);
+      fd.append('batch_id', batchId);
+      try{
+        const res = await api('/api/upload-photo', {method:'POST', body:fd});
+        facesTotal += res.faces_detected || 0;
+        matchedTotal += (res.matched||[]).length;
+      }catch(err){ errCount++; }
+    }
+    if(errCount){
+      toast(`Uploaded with ${errCount} error(s) — ${facesTotal} face(s) detected`, 'warn');
+    } else {
+      toast(`${facesTotal} face(s) detected, ${matchedTotal} matched`);
+    }
+    document.getElementById('uploadFiles').value = '';
+    document.getElementById('uploadFileLabel').textContent = 'Choose photos…';
+    loadToday();
+  }catch(e){ toast(e.message, 'error'); }
+  finally{ hideOverlay(); }
+});
+
+/* ============================================================
+   WORKERS VIEW
+   ============================================================ */
+async function loadWorkers(){
+  try{
+    const resp = await api('/api/workers');
+    state.workers = (resp && resp.workers) || [];
+    renderWorkers(state.workers);
+  }catch(e){ toast('Could not load workers', 'error'); }
+}
+function renderWorkers(list){
+  const el = document.getElementById('workerGrid');
+  document.getElementById('workerCount').textContent = `${list.length} worker${list.length!==1?'s':''}`;
+  if(!list.length){
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fa-regular fa-face-meh"></i><p>No workers enrolled yet. Start by enrolling one.</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(w=>`
+    <div class="card worker-card hoverable" onclick="openProfile(${w.id})">
+      <img class="worker-thumb" src="${thumbUrl(w.thumbnail_path)}" onerror="this.style.background='var(--orb-surface-hover)'">
+      <div class="card-title">${escapeHtml(w.name)}</div>
+      <div class="cap">Enrolled ${(w.created_at||'').slice(0,10)}</div>
+    </div>`).join('');
+  anime({targets: el.children, opacity:[0,1], translateY:[10,0], delay: anime.stagger(40), duration:400, easing:'easeOutCubic'});
+}
+document.getElementById('workerSearch').addEventListener('input', (e)=>{
+  const q = e.target.value.toLowerCase();
+  renderWorkers(state.workers.filter(w=>w.name.toLowerCase().includes(q)));
+});
+
+document.getElementById('enrollFab').addEventListener('click', ()=>openModal('modalEnroll'));
+document.getElementById('enrollFiles').addEventListener('change', (e)=>{
+  document.getElementById('enrollFileNames').textContent = Array.from(e.target.files).map(f=>f.name).join(', ');
+});
+document.getElementById('enrollSubmit').addEventListener('click', async ()=>{
+  const name = document.getElementById('enrollName').value.trim();
+  const files = document.getElementById('enrollFiles').files;
+  if(!name || !files.length){ toast('Add a name and at least one photo', 'warn'); return; }
+  const fd = new FormData();
+  fd.append('name', name);
+  for(const f of files) fd.append('photos', f);
+  showOverlay('Registering worker…');
+  try{
+    await api('/api/workers', {method:'POST', body:fd});
+    toast('Worker registered');
+    closeModal('modalEnroll');
+    document.getElementById('enrollName').value='';
+    document.getElementById('enrollFiles').value='';
+    document.getElementById('enrollFileNames').textContent='';
+    loadWorkers();
+  }catch(e){ toast(e.message, 'error'); }
+  finally{ hideOverlay(); }
+});
+
+async function openProfile(id){
+  openModal('modalProfile');
+  try{
+    const profile = await api(`/api/workers/${id}/profile`);
+    let auditEntries = [];
+    try{ const a = await api(`/api/today/audit/${id}`); auditEntries = (a && a.entries) || []; }catch(e){}
+    const w = profile.worker || {};
+    document.getElementById('profileThumb').src = thumbUrl(w.thumbnail_path);
+    document.getElementById('profileName').textContent = w.name || '—';
+    document.getElementById('profileEnrolled').textContent = 'Enrolled ' + ((w.created_at||'').slice(0,10));
+    const stats = profile.stats || {};
+    document.getElementById('statFull').textContent = stats.full_days||0;
+    document.getElementById('statHalf').textContent = stats.half_days||0;
+    document.getElementById('statAbsent').textContent = stats.absent_days||0;
+    document.getElementById('profileDelete').onclick = ()=>deleteWorker(id);
+    const evidence = profile.evidence||[];
+    document.getElementById('profilePhotoGrid').innerHTML = evidence.map(p=>`<div class="photo-thumb"><img src="${p.url}"></div>`).join('') || '<span class="empty-inline">No photos yet</span>';
+    document.getElementById('profileAuditLog').innerHTML = auditEntries.map(a=>{
+      const field = a.field==='morning_present' ? 'Morning' : 'Evening';
+      const val = a.new_value ? 'Present' : 'Absent';
+      return `<li>${field} on ${a.date} set to ${val} by ${escapeHtml(a.changed_by||'')}${a.reason?': '+escapeHtml(a.reason):''} — <span style="color:var(--text-dim);">${(a.changed_at||'').slice(0,16)}</span></li>`;
+    }).join('') || '<li style="border:none;padding:0;">No corrections logged</li>';
+    const attendance = (profile.attendance||[]).slice().reverse();
+    renderProfileChart(attendance.map(r=>({
+      date:r.date,
+      status: (r.morning_present && r.evening_present) ? 'full' : (r.morning_present || r.evening_present) ? 'half' : 'absent'
+    })));
+  }catch(e){
+    console.error('Worker profile load failed:', e);
+    toast(e.message || 'Could not load worker profile', 'error');
+  }
+}
+let profileChartInstance;
+function renderProfileChart(timeline){
+  const ctx = document.getElementById('profileChart');
+  if(typeof Chart === 'undefined'){
+    // Chart.js failed to load (e.g. no internet reaching the CDN). Don't
+    // let a missing charting library break the rest of the worker profile
+    // modal — just hide the canvas and skip the chart.
+    ctx.style.display = 'none';
+    return;
+  }
+  ctx.style.display = '';
+  if(profileChartInstance) profileChartInstance.destroy();
+  profileChartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: timeline.map(t=>t.date),
+      datasets:[{
+        data: timeline.map(t=>t.status==='full'?1:t.status==='half'?0.5:0),
+        backgroundColor: timeline.map(t=>t.status==='full'?'#2dd4a7':t.status==='half'?'#f0b100':'#ff5f7e33'),
+        borderRadius:3, barThickness:8,
+      }]
+    },
+    options:{
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#5f7976',font:{family:'JetBrains Mono',size:9}},grid:{display:false}},
+        y:{display:false, max:1}
       }
     }
+  });
+}
+async function deleteWorker(id){
+  const reason = prompt('Reason for deleting this worker:');
+  if(!reason) return;
+  try{
+    await api(`/api/workers/${id}`, {method:'DELETE', body:{reason}});
+    toast('Worker deleted');
+    closeModal('modalProfile');
+    loadWorkers();
+  }catch(e){ toast(e.message, 'error'); }
+}
 
-    async function handleEnrollWorker(e) {
-      e.preventDefault();
-      const btn = document.getElementById('enrollSubmitBtn');
-      btn.disabled = true;
-      btn.innerText = "Enrolling...";
-
-      const formData = new FormData();
-      formData.append('name', document.getElementById('workerNameInput').value);
-      const files = document.getElementById('workerPhotosInput').files;
-      for (let f of files) formData.append('photos', f);
-
-      try {
-        const res = await fetch('/api/workers', { method: 'POST', body: formData });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || "Enrollment failed");
+/* ============================================================
+   CALENDAR VIEW
+   ============================================================ */
+async function loadCalendar(){
+  renderCalendarSkeleton();
+}
+function renderCalendarSkeleton(){
+  document.getElementById('calMonthLabel').textContent = state.calMonth.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+  const grid = document.getElementById('monthGrid');
+  const first = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth(), 1);
+  const startDay = first.getDay();
+  const daysInMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth()+1, 0).getDate();
+  let cells = [];
+  for(let i=0;i<startDay;i++) cells.push('<div class="month-cell other-month"></div>');
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = fmtDate(new Date(state.calMonth.getFullYear(), state.calMonth.getMonth(), d));
+    cells.push(`<div class="month-cell" data-date="${dateStr}" onclick="openDayNote('${dateStr}')">
+      <div class="daynum">${d}</div>
+      <div class="mini-bars" id="bars-${dateStr}"></div>
+    </div>`);
+  }
+  grid.innerHTML = cells.join('');
+  loadCalendarData(fmtDate(first), daysInMonth);
+}
+async function loadCalendarData(monthStart, daysInMonth){
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = fmtDate(new Date(state.calMonth.getFullYear(), state.calMonth.getMonth(), d));
+    api(`/api/calendar/day/${dateStr}`).then(day=>{
+      const barsEl = document.getElementById(`bars-${dateStr}`);
+      if(!barsEl) return;
+      const amCount = (day.morning_total||0), pmCount = (day.evening_total||0);
+      const max = Math.max(amCount, pmCount, 1);
+      barsEl.innerHTML = `<div class="bar am" style="height:${(amCount/max*100)||3}%"></div><div class="bar pm" style="height:${(pmCount/max*100)||3}%"></div>`;
+      const cell = barsEl.closest('.month-cell');
+      if(day.note && cell){
+        cell.classList.add('has-note');
+        cell.title = day.note;
+        let banner = cell.querySelector('.note-banner');
+        if(!banner){
+          banner = document.createElement('div');
+          banner.className = 'note-banner';
+          cell.appendChild(banner);
         }
-        closeEnrollModal();
-        loadWorkers();
-      } catch (err) {
-        alert(err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "Enroll";
+        banner.textContent = day.note;
       }
-    }
+    }).catch(()=>{});
+  }
+}
+document.getElementById('calPrev').addEventListener('click', ()=>{ state.calMonth.setMonth(state.calMonth.getMonth()-1); renderCalendarSkeleton(); });
+document.getElementById('calNext').addEventListener('click', ()=>{ state.calMonth.setMonth(state.calMonth.getMonth()+1); renderCalendarSkeleton(); });
+document.getElementById('calToday').addEventListener('click', ()=>{ state.calMonth = new Date(); renderCalendarSkeleton(); });
 
-    async function deleteWorker(id, name) {
-      if (!confirm(`Are you sure you want to delete worker "${name}"?`)) return;
-      try {
-        await fetch(`/api/workers/${id}`, { method: 'DELETE' });
-        loadWorkers();
-      } catch (e) {
-        alert("Could not delete worker.");
-      }
-    }
+let noteDate = null;
+async function openDayNote(dateStr){
+  noteDate = dateStr;
+  document.getElementById('noteModalDate').textContent = dateStr;
+  document.getElementById('noteText').value = '';
+  openModal('modalNote');
+  try{
+    const day = await api(`/api/calendar/day/${dateStr}`);
+    document.getElementById('noteText').value = day.note || '';
+  }catch(e){}
+}
+document.getElementById('noteSave').addEventListener('click', async ()=>{
+  try{
+    await api(`/api/calendar/day/${noteDate}/note`, {method:'PUT', body:{note: document.getElementById('noteText').value}});
+    toast('Note saved');
+    closeModal('modalNote');
+    renderCalendarSkeleton();
+  }catch(e){ toast(e.message, 'error'); }
+});
 
-    async function loadDailyWage() {
-      try {
-        const res = await fetch('/api/reports/settings');
-        const data = await res.json();
-        document.getElementById('dailyWageInput').value = data.daily_wage;
-      } catch (e) {}
-    }
+/* ============================================================
+   REPORTS VIEW
+   ============================================================ */
+(async function initReportsDefaults(){
+  try{
+    const s = await api('/api/reports/settings');
+    if(s && s.daily_wage) document.getElementById('reportWage').value = s.daily_wage;
+  }catch(e){}
+})();
+document.getElementById('saveWageLink').addEventListener('click', async (e)=>{
+  e.preventDefault();
+  try{
+    await api('/api/reports/settings', {method:'POST', body:{daily_wage: Number(document.getElementById('reportWage').value)||0}});
+    toast('Default wage saved');
+  }catch(e){ toast(e.message, 'error'); }
+});
+document.getElementById('reportGenerate').addEventListener('click', async ()=>{
+  const from = document.getElementById('reportFrom').value;
+  const to = document.getElementById('reportTo').value;
+  const wage = Number(document.getElementById('reportWage').value)||0;
+  const includePhotos = document.getElementById('reportPhotos').checked;
+  if(!from || !to){ toast('Choose a date range', 'warn'); return; }
+  showOverlay('Building report…');
+  try{
+    const res = await api('/api/reports/generate', {method:'POST', body:{start_date:from, end_date:to, daily_wage:wage, include_photos:includePhotos}});
+    const dl = document.getElementById('reportDownload');
+    dl.innerHTML = `<div class="download-link"><span class="ping-dot"></span><a href="${res.download_url}" target="_blank">${res.filename}</a></div>`;
+    toast('Report ready');
+  }catch(e){ toast(e.message, 'error'); }
+  finally{ hideOverlay(); }
+});
 
-    async function saveDailyWage() {
-      const wage = parseFloat(document.getElementById('dailyWageInput').value);
-      if (!wage || wage <= 0) return alert("Please enter a valid wage.");
-      try {
-        await fetch('/api/reports/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ daily_wage: wage })
-        });
-        alert("Daily wage saved!");
-      } catch (e) {
-        alert("Could not save wage.");
-      }
+/* ============================================================
+   GALLERY VIEW
+   ============================================================ */
+async function loadGallery(){
+  const date = document.getElementById('galleryDate').value;
+  const session = document.getElementById('gallerySession').value;
+  try{
+    const qs = new URLSearchParams();
+    if(date) qs.set('date', date);
+    if(session) qs.set('session', session);
+    const photos = await api(`/api/gallery?${qs.toString()}`);
+    renderGallery(photos || []);
+  }catch(e){ toast('Could not load gallery', 'error'); }
+}
+document.getElementById('galleryDate').addEventListener('change', loadGallery);
+document.getElementById('gallerySession').addEventListener('change', loadGallery);
+function renderGallery(photos){
+  document.getElementById('galleryCount').textContent = `${photos.length} photo${photos.length!==1?'s':''}`;
+  const el = document.getElementById('photoGrid');
+  if(!photos.length){
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fa-regular fa-images"></i><p>No photos logged for this filter.</p></div>`;
+    return;
+  }
+  el.innerHTML = photos.map(p=>`
+    <div class="photo-thumb" onclick="openLightbox(${p.id},'${p.url}')">
+      <img src="${p.url}" loading="lazy">
+      <div class="photo-overlay"><span class="face-badge">View faces</span></div>
+      <i class="fa-solid fa-trash trash-icon" onclick="event.stopPropagation();deletePhoto(${p.id})"></i>
+    </div>`).join('');
+}
+async function deletePhoto(id){
+  const reason = prompt('Reason for deleting this photo:');
+  if(!reason) return;
+  try{
+    const res = await api(`/api/gallery/${id}`, {method:'DELETE', body:{reason}});
+    if(res.attendance_reverted && res.attendance_reverted.length){
+      toast(`Photo deleted — reverted attendance for ${res.attendance_reverted.length} worker(s)`, 'warn');
+    } else {
+      toast('Photo deleted');
     }
+    loadGallery();
+  }
+  catch(e){ toast(e.message, 'error'); }
+}
+async function openLightbox(id, url){
+  document.getElementById('lightboxImg').src = url;
+  openModal('modalLightbox');
+  try{
+    const faces = await api(`/api/gallery/${id}/faces`);
+    document.getElementById('lightboxFaces').innerHTML = (faces||[]).map(f=>`
+      <div class="face-pill"><img src="${thumbUrl(f.thumbnail_path)}"><div class="meta">${escapeHtml(f.name||'Unmatched')} ${f.similarity!=null?`· ${Math.round(f.similarity*100)}%`:''}</div></div>
+    `).join('') || '<span class="empty-inline">No matched faces</span>';
+  }catch(e){}
+}
 
-    async function generateReport() {
-      const start = document.getElementById('reportStartDate').value;
-      const end = document.getElementById('reportEndDate').value;
-      try {
-        const res = await fetch('/api/reports/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ start_date: start, end_date: end })
-        });
-        if (!res.ok) throw new Error("Could not generate report");
-        const data = await res.json();
-        window.location.href = data.download_url;
-      } catch (e) {
-        alert(e.message);
-      }
-    }
+/* ============================================================
+   BACKUP & SYNC VIEW
+   ============================================================ */
+document.querySelectorAll('.subtab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.subtab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.subtab-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('sub-'+tab.dataset.sub).classList.add('active');
+    if(tab.dataset.sub === 'deletions') loadDeletionsLog();   // ← new line
+  });
+});
+async function loadBackupStatus(){
+  try{
+    const s = await api('/api/sync/status');
+    const folderOk = !!(s && s.configured);
+    document.getElementById('folderSyncDot').classList.toggle('ok', folderOk);
+    document.getElementById('folderSyncLabel').textContent = folderOk ? `Synced · last push ${(s.last_push_at||'—').toString().slice(0,16)}` : 'Not synced';
+    document.getElementById('syncFolderPath').value = (s && s.folder) || '';
+  }catch(e){}
+  try{
+    const g = await api('/api/gdrive/status');
+    const gOk = !!(g && g.connected);
+    document.getElementById('gdriveDot').classList.toggle('ok', gOk);
+    document.getElementById('gdriveLabel').textContent = gOk ? `Connected · last push ${(g.last_push_at||'—').toString().slice(0,16)}` : 'Not connected';
+  }catch(e){}
+}
+async function loadDeletionsLog(){
+  try{
+    const resp = await api('/api/audit/deletions');
+    const rows = (resp && resp.entries) || [];
+    document.getElementById('deletionsTableBody').innerHTML = rows.map(r=>{
+      let extra = {};
+      try{ extra = JSON.parse(r.extra || '{}'); }catch(e){}
+      const label = extra.name || extra.filename || r.entity_id;
+      return `<tr>
+        <td>${(r.deleted_at||'').slice(0,16)}</td>
+        <td>${escapeHtml(r.entity_type)}</td>
+        <td>${escapeHtml(label)}</td>
+        <td>${escapeHtml(r.deleted_by)}</td>
+        <td>${escapeHtml(r.reason)}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="5" style="color:var(--text-dim);">No deletions logged</td></tr>';
+  }catch(e){ toast('Could not load deletion log', 'error'); }
+}
+document.getElementById('downloadBackup').addEventListener('click', ()=>{
+  window.open('/api/backup/export', '_blank');
+});
+document.getElementById('restoreFile').addEventListener('change', async (e)=>{
+  if(!e.target.files.length) return;
+  if(!confirm('Restoring will overwrite current data. Continue?')) return;
+  const fd = new FormData(); fd.append('file', e.target.files[0]);
+  showOverlay('Restoring backup…');
+  try{ await api('/api/backup/import', {method:'POST', body:fd}); toast('Backup restored'); }
+  catch(e){ toast(e.message, 'error'); }
+  finally{ hideOverlay(); }
+});
+document.getElementById('saveFolderPath').addEventListener('click', async ()=>{
+  try{ await api('/api/sync/configure', {method:'POST', body:{folder: document.getElementById('syncFolderPath').value}}); toast('Folder path saved'); loadBackupStatus(); }
+  catch(e){ toast(e.message, 'error'); }
+});
+document.getElementById('folderPush').addEventListener('click', async ()=>{
+  showOverlay('Pushing to folder…');
+  try{ await api('/api/sync/push', {method:'POST'}); toast('Pushed'); loadBackupStatus(); }
+  catch(e){ toast(e.message, 'error'); } finally{ hideOverlay(); }
+});
+document.getElementById('folderPull').addEventListener('click', async ()=>{
+  showOverlay('Pulling from folder…');
+  try{ await api('/api/sync/pull', {method:'POST'}); toast('Pulled'); loadBackupStatus(); }
+  catch(e){ toast(e.message, 'error'); } finally{ hideOverlay(); }
+});
+document.getElementById('gdriveConnect').addEventListener('click', async ()=>{
+  try{
+    await api('/api/gdrive/credentials', {method:'POST', body:{
+      client_id: document.getElementById('gdriveClientId').value,
+      client_secret: document.getElementById('gdriveClientSecret').value,
+    }});
+    const r = await api('/api/gdrive/connect');
+    if(r && r.auth_url) window.open(r.auth_url, '_blank', 'width=480,height=640');
+    toast('Complete authorization in the popup');
+  }catch(e){ toast(e.message, 'error'); }
+});
+document.getElementById('gdriveDisconnect').addEventListener('click', async ()=>{
+  try{ await api('/api/gdrive/disconnect', {method:'POST'}); toast('Disconnected'); loadBackupStatus(); }
+  catch(e){ toast(e.message, 'error'); }
+});
+document.getElementById('gdrivePush').addEventListener('click', async ()=>{
+  showOverlay('Pushing to Google Drive…');
+  try{ await api('/api/gdrive/push', {method:'POST'}); toast('Pushed'); loadBackupStatus(); }
+  catch(e){ toast(e.message, 'error'); } finally{ hideOverlay(); }
+});
+document.getElementById('gdrivePull').addEventListener('click', async ()=>{
+  showOverlay('Pulling from Google Drive…');
+  try{ await api('/api/gdrive/pull', {method:'POST'}); toast('Pulled'); loadBackupStatus(); }
+  catch(e){ toast(e.message, 'error'); } finally{ hideOverlay(); }
+});
 
-    async function openPairModal() {
-      document.getElementById('pairModal').classList.remove('hidden');
-      document.getElementById('pairModal').classList.add('flex');
-      document.getElementById('qrImage').src = '/api/qr-code';
-      try {
-        const res = await fetch('/api/server-info');
-        const data = await res.json();
-        document.getElementById('pairUrlText').innerText = data.pair_url;
-      } catch (e) {}
-    }
+/* ============================================================
+   USERS VIEW
+   ============================================================ */
+async function loadUsers(){
+  try{
+    const resp = await api('/api/auth/users');
+    const users = (resp && resp.users) || [];
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = users.map(u=>`
+      <tr><td>${escapeHtml(u.username)}</td><td>${u.role}</td><td>${(u.created_at||'').slice(0,10)}</td>
+      <td>${u.role!=='root' ? `<button class="btn btn-ghost-red btn-sm" onclick="deleteUser(${u.id})">Delete</button>` : ''}</td></tr>
+    `).join('');
+  }catch(e){ toast('Could not load users', 'error'); }
+}
+document.getElementById('addUserBtn').addEventListener('click', async ()=>{
+  const username = document.getElementById('newUserName').value.trim();
+  const password = document.getElementById('newUserPass').value;
+  if(!username || !password){ toast('Enter a username and password', 'warn'); return; }
+  try{
+    await api('/api/auth/users', {method:'POST', body:{username, password}});
+    toast('Manager added');
+    document.getElementById('newUserName').value=''; document.getElementById('newUserPass').value='';
+    loadUsers();
+  }catch(e){ toast(e.message, 'error'); }
+});
+async function deleteUser(id){
+  if(!confirm('Delete this user account?')) return;
+  try{ await api(`/api/auth/users/${id}`, {method:'DELETE'}); toast('User removed'); loadUsers(); }
+  catch(e){ toast(e.message, 'error'); }
+}
 
-    function closePairModal() {
-      document.getElementById('pairModal').classList.add('hidden');
-      document.getElementById('pairModal').classList.remove('flex');
-    }
+/* ============================================================
+   PAIRING QR MODAL
+   ============================================================ */
+document.getElementById('pairBtn').addEventListener('click', async ()=>{
+  openModal('modalPair');
+  await loadPairInfo();
+});
+async function loadPairInfo(){
+  try{
+    const info = await api('/api/server-info');
+    document.getElementById('pairUrl').textContent = info.pair_url || '';
+    document.getElementById('qrImage').src = '/api/qr-code?t=' + Date.now();
+  }catch(e){ toast('Could not load pairing info', 'error'); }
+}
+document.getElementById('regenerateQr').addEventListener('click', async ()=>{
+  try{ await loadPairInfo(); toast('Pairing code regenerated'); }
+  catch(e){ toast(e.message, 'error'); }
+});
 
-    function openEnrollModal() {
-      document.getElementById('enrollForm').reset();
-      document.getElementById('enrollModal').classList.remove('hidden');
-      document.getElementById('enrollModal').classList.add('flex');
-    }
+/* ============================================================
+   MODAL HELPERS
+   ============================================================ */
+function openModal(id){
+  const el = document.getElementById(id);
+  el.classList.remove('hidden');
+  const inner = el.querySelector('.modal');
+  anime({targets:inner, scale:[0.95,1], opacity:[0,1], duration:280, easing:'easeOutCubic'});
+}
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+document.querySelectorAll('.modal-close').forEach(btn=>{
+  btn.addEventListener('click', ()=>closeModal(btn.dataset.close));
+});
+document.querySelectorAll('.modal-backdrop').forEach(bd=>{
+  bd.addEventListener('click', (e)=>{ if(e.target===bd) bd.classList.add('hidden'); });
+});
 
-    function closeEnrollModal() {
-      document.getElementById('enrollModal').classList.add('hidden');
-      document.getElementById('enrollModal').classList.remove('flex');
-    }
-  </script>
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+bootAuth();
+</script>
 </body>
 </html>

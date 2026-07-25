@@ -1,246 +1,473 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Construction Site Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Attendance-PC · Pair</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+<style>
+:root{
+  --void-deep:#06051d;
+  --void-abyss:#011d1c;
+  --orb-surface:#003734;
+  --orb-surface-hover:#0a4c47;
+  --border-subtle:rgba(229,231,235,.12);
+  --border-active:rgba(99,179,237,.35);
+  --text-primary:#ffffff;
+  --text-body:#cad5e2;
+  --text-muted:#8fa8a5;
+  --text-dim:#5f7976;
+  --status-green:#2dd4a7;
+  --status-amber:#f0b100;
+  --status-red:#ff5f7e;
+  --aurora-gradient:linear-gradient(90deg,#00827c 0%,#4fe0d2 45%,#cbfffc 75%,#fde9ff 100%);
+  --font-display:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--void-deep);color:var(--text-body);font-family:var(--font-mono);
+  font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  min-height:100vh;display:flex;justify-content:center;
+  padding:24px 16px calc(24px + env(safe-area-inset-bottom));
+}
+button{font-family:var(--font-mono);cursor:pointer;border:none;background:none;color:inherit;}
+input,textarea{font-family:var(--font-mono);background:none;border:none;color:var(--text-primary);outline:none;}
+.hidden{display:none !important;}
+::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-thumb{background:var(--orb-surface-hover);}
+
+.wrap{width:100%;max-width:480px;}
+
+.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);}
+.display-title{font-family:var(--font-display);font-size:26px;font-weight:500;letter-spacing:-.01em;color:var(--text-primary);}
+
+.header{display:flex;align-items:center;gap:10px;margin-bottom:28px;padding-top:8px;}
+.header span{font-family:var(--font-display);font-size:17px;color:var(--text-primary);}
+
+/* Landing */
+.mode-cards{display:flex;flex-direction:column;gap:16px;}
+.mode-card{
+  background:var(--orb-surface);border:1px solid var(--border-subtle);border-radius:16px;
+  padding:28px 24px;display:flex;align-items:center;gap:18px;transition:background .2s ease, transform .15s ease;
+}
+.mode-card:active{transform:scale(.98);background:var(--orb-surface-hover);}
+.mode-card .icon{
+  width:52px;height:52px;border-radius:50%;background:var(--void-abyss);
+  display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--status-green);flex-shrink:0;
+}
+.mode-card .txt .t{font-family:var(--font-display);font-size:17px;color:var(--text-primary);margin-bottom:2px;}
+.mode-card .txt .s{font-size:11px;color:var(--text-muted);}
+
+/* Screens */
+.screen{display:none;}
+.screen.active{display:block;}
+.back-row{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
+.back-btn{width:34px;height:34px;border-radius:50%;background:var(--orb-surface);display:flex;align-items:center;justify-content:center;}
+
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:8px;}
+.field input[type=text]{
+  width:100%;background:var(--orb-surface);border:1px solid var(--border-subtle);border-radius:8px;
+  padding:13px 14px;font-size:14px;color:var(--text-primary);
+}
+.field input:focus{border-color:var(--border-active);}
+
+.segmented{display:flex;background:var(--void-abyss);border-radius:9999px;padding:4px;border:1px solid var(--border-subtle);}
+.segmented button{flex:1;padding:10px 0;border-radius:9999px;font-size:12px;color:var(--text-muted);text-align:center;}
+.segmented button.active{background:var(--aurora-gradient);color:#022825;font-weight:600;}
+
+.cam-frame{
+  position:relative;aspect-ratio:1;border-radius:16px;overflow:hidden;
+  background:var(--orb-surface);border:1px solid var(--border-subtle);
+  display:flex;align-items:center;justify-content:center;margin:18px 0;
+}
+.cam-frame img,.cam-frame video{width:100%;height:100%;object-fit:cover;}
+.cam-placeholder{text-align:center;color:var(--text-dim);}
+.cam-placeholder i{font-size:26px;display:block;margin-bottom:10px;}
+.cam-placeholder p{font-size:11px;}
+.scan-line{
+  position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--status-green),transparent);
+  top:0;box-shadow:0 0 12px var(--status-green);
+}
+
+.tap-snap{
+  width:66px;height:66px;border-radius:50%;border:3px solid var(--text-primary);
+  display:flex;align-items:center;justify-content:center;margin:0 auto;
+}
+.tap-snap .inner{width:52px;height:52px;border-radius:50%;background:var(--aurora-gradient);}
+
+.thumb-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+.thumb-row img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid var(--border-subtle);}
+
+.stepper{display:flex;gap:6px;justify-content:center;margin:20px 0;}
+.stepper .dot{width:8px;height:8px;border-radius:50%;background:var(--orb-surface-hover);transition:background .2s;}
+.stepper .dot.active{background:var(--status-green);}
+
+.btn{
+  font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.02em;
+  padding:14px 20px;border-radius:9999px;width:100%;text-align:center;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-aurora{background:var(--aurora-gradient);background-size:200% 100%;color:#022825;}
+.btn-aurora:disabled{opacity:.4;}
+.btn-ghost{background:var(--orb-surface);border:1px solid var(--border-subtle);color:var(--text-body);}
+
+.status-msg{text-align:center;font-size:12px;margin-top:14px;min-height:16px;}
+.status-msg.error{color:var(--status-red);}
+.status-msg.ok{color:var(--status-green);}
+
+.spinner{
+  width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.2);
+  border-top-color:#022825;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.success-wrap{text-align:center;padding:40px 0;}
+#successOrb{margin:0 auto 20px;display:block;}
+.success-wrap .t{font-family:var(--font-display);font-size:20px;color:var(--text-primary);margin-bottom:6px;}
+.success-wrap .s{font-size:12px;color:var(--text-muted);margin-bottom:24px;}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+}
+</style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
-    <div class="bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 space-y-5 border border-slate-700">
-        
-        <div class="text-center space-y-1">
-            <i class="fa-solid fa-helmet-safety text-amber-500 text-3xl"></i>
-            <h2 class="font-bold text-xl">Site Supervisor Portal</h2>
-            <p class="text-xs text-slate-400">Kshirsagar Group Mobile Interface</p>
-        </div>
+<body>
+<div class="wrap">
+  <div class="header"><canvas id="brandOrb" width="26" height="26"></canvas><span>Attendance-PC</span></div>
 
-        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900 rounded-xl text-xs font-semibold">
-            <button id="tabAttendanceBtn" onclick="switchTab('attendance')" class="py-2.5 rounded-lg bg-amber-500 text-slate-900 transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-camera"></i> Attendance
-            </button>
-            <button id="tabEnrollBtn" onclick="switchTab('enroll')" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-user-plus"></i> Enroll Worker
-            </button>
-        </div>
+  <!-- ============ LANDING ============ -->
+  <section class="screen active" id="screen-landing">
+    <div class="eyebrow" style="margin-bottom:6px;">Field capture</div>
+    <div class="display-title" style="margin-bottom:24px;">What are you doing?</div>
+    <div class="mode-cards">
+      <div class="mode-card" onclick="goTo('attendance')">
+        <div class="icon"><i class="fa-solid fa-camera"></i></div>
+        <div class="txt"><div class="t">Take attendance</div><div class="s">Photograph today's crew for a session</div></div>
+      </div>
+      <div class="mode-card" onclick="goTo('enroll-1')">
+        <div class="icon"><i class="fa-solid fa-user-plus"></i></div>
+        <div class="txt"><div class="t">Enroll new worker</div><div class="s">Register a new face on the crew roster</div></div>
+      </div>
+    </div>
+    <div class="status-msg" id="tokenWarning"></div>
+  </section>
 
-        <form id="attendanceForm" onsubmit="handleAttendanceUpload(event)" class="space-y-4">
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Supervisor Name</label>
-                <input type="text" id="username" required placeholder="Enter your name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-amber-500">
-            </div>
+  <!-- ============ ATTENDANCE FLOW ============ -->
+  <section class="screen" id="screen-attendance">
+    <div class="back-row"><button class="back-btn" onclick="goTo('landing')"><i class="fa-solid fa-arrow-left"></i></button><span class="eyebrow">Take attendance</span></div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Session</label>
-                <select id="session" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-amber-500">
-                    <option value="morning">Morning</option>
-                    <option value="evening">Evening</option>
-                </select>
-            </div>
+    <div class="field"><label>Supervisor name</label><input type="text" id="supervisorName" placeholder="Your name"></div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Photo Date</label>
-                <input type="date" id="photoDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-amber-500">
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Capture Group Photo</label>
-                <input type="file" id="photoFile" accept="image/*" capture="environment" required class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-900 hover:file:bg-amber-600">
-            </div>
-
-            <button type="submit" id="attSubmitBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-2.5 rounded-xl text-sm transition">
-                Upload & Process Attendance
-            </button>
-        </form>
-
-        <form id="enrollForm" onsubmit="handleWorkerEnroll(event)" class="hidden space-y-4">
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Full Worker Name</label>
-                <input type="text" id="workerName" required placeholder="e.g., Ramesh Kumar" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500">
-            </div>
-
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <label class="text-xs font-semibold text-slate-300">Worker Face Photos (2 to 3 required)</label>
-                    <span id="photoBadge" class="bg-slate-700 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">0 / 3 Captured</span>
-                </div>
-
-                <input type="file" id="cameraPicker" accept="image/*" capture="user" class="hidden" onchange="addCapturedPhoto(this)">
-
-                <button type="button" onclick="triggerCamera()" id="snapBtn" class="w-full border-2 border-dashed border-emerald-500/50 hover:border-emerald-500 bg-emerald-950/20 hover:bg-emerald-950/40 text-emerald-400 font-semibold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition">
-                    <i class="fa-solid fa-camera text-base"></i> Tap to Snap Photo <span id="snapCountText">(Photo 1 of 3)</span>
-                </button>
-
-                <div id="thumbnailGrid" class="grid grid-cols-3 gap-2 pt-1"></div>
-            </div>
-
-            <button type="submit" id="enrollSubmitBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold py-2.5 rounded-xl text-sm transition">
-                Register New Worker
-            </button>
-        </form>
-
-        <div id="statusMessage" class="hidden text-center text-xs font-medium p-3 rounded-lg"></div>
+    <div class="field">
+      <label>Session</label>
+      <div class="segmented">
+        <button class="active" data-session="morning" onclick="pickSession('morning')">Morning</button>
+        <button data-session="evening" onclick="pickSession('evening')">Evening</button>
+      </div>
     </div>
 
-    <script>
-        let capturedFiles = [];
+    <div class="cam-frame" id="attCamFrame">
+      <div class="cam-placeholder"><i class="fa-solid fa-camera"></i><p>Tap to capture or choose crew photo(s)</p></div>
+    </div>
+    <div class="thumb-row" id="attThumbs"></div>
+    <input type="file" id="attFileInput" accept="image/*" capture="environment" class="hidden">
+    <input type="file" id="attLibraryInput" accept="image/*" multiple class="hidden">
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('attFileInput').click()"><i class="fa-solid fa-camera"></i> Camera</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('attLibraryInput').click()"><i class="fa-solid fa-images"></i> Choose files</button>
+    </div>
 
-        document.getElementById('photoDate').value = new Date().toISOString().split('T')[0];
+    <button class="btn btn-aurora" id="attSubmitBtn" style="margin-top:16px;" disabled onclick="submitAttendance()">Upload &amp; process</button>
+    <div class="status-msg" id="attStatus"></div>
+  </section>
 
-        function switchTab(tab) {
-            const attForm = document.getElementById('attendanceForm');
-            const enrollForm = document.getElementById('enrollForm');
-            const attBtn = document.getElementById('tabAttendanceBtn');
-            const enrollBtn = document.getElementById('tabEnrollBtn');
-            const status = document.getElementById('statusMessage');
+  <!-- ============ ENROLL FLOW — STEP 1 ============ -->
+  <section class="screen" id="screen-enroll-1">
+    <div class="back-row"><button class="back-btn" onclick="goTo('landing')"><i class="fa-solid fa-arrow-left"></i></button><span class="eyebrow">Enroll worker · Step 1 of 3</span></div>
+    <div class="stepper"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="field"><label>Worker name</label><input type="text" id="enrollName" placeholder="Full name"></div>
+    <button class="btn btn-aurora" onclick="goToStep2()">Continue</button>
+  </section>
 
-            status.className = 'hidden';
+  <!-- ============ ENROLL FLOW — STEP 2 ============ -->
+  <section class="screen" id="screen-enroll-2">
+    <div class="back-row"><button class="back-btn" onclick="goTo('enroll-1')"><i class="fa-solid fa-arrow-left"></i></button><span class="eyebrow">Enroll worker · Step 2 of 3</span></div>
+    <div class="stepper"><div class="dot active"></div><div class="dot active"></div><div class="dot"></div></div>
 
-            if (tab === 'attendance') {
-                attForm.classList.remove('hidden');
-                enrollForm.classList.add('hidden');
-                attBtn.className = 'py-2.5 rounded-lg bg-amber-500 text-slate-900 transition flex items-center justify-center gap-2';
-                enrollBtn.className = 'py-2.5 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-2';
-            } else {
-                enrollForm.classList.remove('hidden');
-                attForm.classList.add('hidden');
-                enrollBtn.className = 'py-2.5 rounded-lg bg-emerald-500 text-slate-900 transition flex items-center justify-center gap-2';
-                attBtn.className = 'py-2.5 rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-2';
-            }
-        }
+    <div class="cam-frame" style="aspect-ratio:4/3;" id="enrollCamFrame">
+      <div class="cam-placeholder"><i class="fa-solid fa-camera"></i><p>Capture 2–3 clear face photos</p></div>
+    </div>
+    <input type="file" id="enrollFileInput" accept="image/*" capture="user" class="hidden">
+    <input type="file" id="enrollLibraryInput" accept="image/*" multiple class="hidden">
 
-        function triggerCamera() {
-            if (capturedFiles.length >= 3) {
-                alert('Maximum of 3 photos reached.');
-                return;
-            }
-            document.getElementById('cameraPicker').click();
-        }
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('enrollFileInput').click()"><i class="fa-solid fa-camera"></i> Camera</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('enrollLibraryInput').click()"><i class="fa-solid fa-images"></i> Choose files</button>
+    </div>
+    <div class="thumb-row" id="enrollThumbs"></div>
 
-        function addCapturedPhoto(input) {
-            if (input.files && input.files[0]) {
-                capturedFiles.push(input.files[0]);
-                input.value = ''; // Reset input so same camera trigger can be reused
-                renderThumbnails();
-            }
-        }
+    <button class="btn btn-aurora" id="enrollStep2Next" style="margin-top:20px;" disabled onclick="goTo('enroll-3')">Review &amp; continue</button>
+  </section>
 
-        function removePhoto(index) {
-            capturedFiles.splice(index, 1);
-            renderThumbnails();
-        }
+  <!-- ============ ENROLL FLOW — STEP 3 ============ -->
+  <section class="screen" id="screen-enroll-3">
+    <div class="back-row"><button class="back-btn" onclick="goTo('enroll-2')"><i class="fa-solid fa-arrow-left"></i></button><span class="eyebrow">Enroll worker · Step 3 of 3</span></div>
+    <div class="stepper"><div class="dot active"></div><div class="dot active"></div><div class="dot active"></div></div>
 
-        function renderThumbnails() {
-            const grid = document.getElementById('thumbnailGrid');
-            const badge = document.getElementById('photoBadge');
-            const snapText = document.getElementById('snapCountText');
-            const snapBtn = document.getElementById('snapBtn');
+    <div class="field"><label>Name</label><div id="reviewName" style="font-size:16px;color:var(--text-primary);"></div></div>
+    <div class="field"><label>Photos</label><div class="thumb-row" id="reviewThumbs"></div></div>
 
-            badge.textContent = `${capturedFiles.length} / 3 Captured`;
-            snapText.textContent = `(Photo ${capturedFiles.length + 1} of 3)`;
+    <button class="btn btn-aurora" id="registerBtn" onclick="submitEnrollment()">Register worker</button>
+    <div class="status-msg" id="enrollStatus"></div>
+  </section>
 
-            if (capturedFiles.length >= 3) {
-                snapBtn.classList.add('opacity-50', 'pointer-events-none');
-            } else {
-                snapBtn.classList.remove('opacity-50', 'pointer-events-none');
-            }
+  <!-- ============ SUCCESS ============ -->
+  <section class="screen" id="screen-success">
+    <div class="success-wrap">
+      <canvas id="successOrb" width="120" height="120"></canvas>
+      <div class="t" id="successTitle">All set</div>
+      <div class="s" id="successSub">Attendance recorded.</div>
+      <button class="btn btn-ghost" onclick="goTo('landing')">Back to start</button>
+    </div>
+  </section>
+</div>
 
-            grid.innerHTML = capturedFiles.map((file, idx) => {
-                const url = URL.createObjectURL(file);
-                return `
-                    <div class="relative group aspect-square bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
-                        <img src="${url}" class="w-full h-full object-cover">
-                        <button type="button" onclick="removePhoto(${idx})" class="absolute top-1 right-1 bg-rose-600 text-white w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shadow">✕</button>
-                    </div>
-                `;
-            }).join('');
-        }
+<script>
+/* ============================================================
+   STATE + TOKEN
+   ============================================================ */
+const params = new URLSearchParams(location.search);
+const PAIR_TOKEN = params.get('token') || '';
+const state = {
+  attFiles: [],
+  enrollPhotos: [], // {file, url}
+};
 
-        async function handleAttendanceUpload(e) {
-            e.preventDefault();
-            const btn = document.getElementById('attSubmitBtn');
-            const status = document.getElementById('statusMessage');
-            
-            btn.disabled = true;
-            btn.textContent = 'Processing faces...';
-            status.className = 'hidden';
+if(!PAIR_TOKEN){
+  document.getElementById('tokenWarning').className = 'status-msg error';
+  document.getElementById('tokenWarning').textContent = 'No pairing token found in the link — re-scan the QR code from the dashboard, otherwise uploads will be rejected.';
+}
+/* ============================================================
+   NAV
+   ============================================================ */
+function goTo(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById('screen-'+name);
+  target.classList.add('active');
+  anime({targets:target, opacity:[0,1], translateY:[10,0], duration:380, easing:'easeOutCubic'});
+  if(name==='enroll-3') prepareReview();
+}
 
-            const formData = new FormData();
-            formData.append('file', document.getElementById('photoFile').files[0]);
-            formData.append('username', document.getElementById('username').value);
-            formData.append('session', document.getElementById('session').value);
-            formData.append('timestamp', new Date().toISOString());
-            formData.append('date', document.getElementById('photoDate').value);
+/* ============================================================
+   API HELPER
+   ============================================================ */
+async function api(path, opts={}){
+  opts.headers = opts.headers || {};
+  opts.headers['X-Pair-Token'] = PAIR_TOKEN;
+  if(!(opts.body instanceof FormData) && opts.body){
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const res = await fetch(path, opts);
+  if(!res.ok){
+    let msg = 'Something went wrong';
+    try{ const j = await res.json(); msg = j.detail || j.message || msg; }catch(e){}
+    throw new Error(msg);
+  }
+  const ct = res.headers.get('content-type') || '';
+  if(ct.includes('application/json')) return res.json();
+  return res;
+}
 
-            try {
-                const res = await fetch('/upload-photo', { method: 'POST', body: formData });
-                const text = await res.text();
-                let data = {};
-                try { data = JSON.parse(text); } catch (_) {}
+/* ============================================================
+   ORBS
+   ============================================================ */
+function makeOrb(canvasId, count, radius){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return null;
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const particles = [];
+  for(let i=0;i<count;i++){
+    particles.push({theta:Math.random()*Math.PI*2, phi:Math.acos(2*Math.random()-1), t:Math.random()});
+  }
+  let rot = 0, exploded = false, explodeT = 0;
+  function lerpColor(t){
+    const a=[0,201,184], b=[253,233,255];
+    return `rgb(${Math.round(a[0]+(b[0]-a[0])*t)},${Math.round(a[1]+(b[1]-a[1])*t)},${Math.round(a[2]+(b[2]-a[2])*t)})`;
+  }
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    rot += 0.005;
+    if(exploded) explodeT = Math.min(explodeT + 0.02, 1);
+    const pts = particles.map(p=>{
+      const theta = p.theta + rot;
+      const r = radius * (1 + (exploded ? explodeT*1.8 : 0));
+      const x = r*Math.sin(p.phi)*Math.cos(theta);
+      const y = r*Math.sin(p.phi)*Math.sin(theta);
+      const z = r*Math.cos(p.phi);
+      const persp = (z+r*1.6)/(r*2.6);
+      return {x, y, persp, t:p.t};
+    }).sort((a,b)=>a.persp-b.persp);
+    pts.forEach(p=>{
+      const px = cx + p.x*(0.7+p.persp*0.5);
+      const py = cy + p.y*(0.7+p.persp*0.5);
+      ctx.beginPath();
+      ctx.fillStyle = lerpColor(p.t*0.5+p.persp*0.5);
+      ctx.globalAlpha = exploded ? Math.max(0, (1-explodeT)*0.9+0.1) : 0.35+p.persp*0.65;
+      ctx.arc(px, py, 0.6+p.persp*1.8, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  }
+  frame();
+  return { explode(){ exploded = true; explodeT = 0; } };
+}
+makeOrb('brandOrb', 50, 9);
+let successOrbInstance;
+window.addEventListener('DOMContentLoaded', ()=>{ successOrbInstance = makeOrb('successOrb', 300, 34); });
 
-                if (res.ok) {
-                    status.textContent = `Success! Detected ${data.faces_detected || 0} face(s).`;
-                    status.className = 'bg-emerald-900/50 text-emerald-300 border border-emerald-700 text-center text-xs font-medium p-3 rounded-lg';
-                    document.getElementById('attendanceForm').reset();
-                    document.getElementById('photoDate').value = new Date().toISOString().split('T')[0];
-                } else {
-                    throw new Error(data.detail || text || 'Upload failed');
-                }
-            } catch (err) {
-                status.textContent = err.message;
-                status.className = 'bg-rose-900/50 text-rose-300 border border-rose-700 text-center text-xs font-medium p-3 rounded-lg';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Upload & Process Attendance';
-            }
-        }
+/* ============================================================
+   ATTENDANCE FLOW
+   ============================================================ */
 
-        async function handleWorkerEnroll(e) {
-            e.preventDefault();
-            const btn = document.getElementById('enrollSubmitBtn');
-            const status = document.getElementById('statusMessage');
+function addAttFiles(fileList){
+  Array.from(fileList).forEach(f=>state.attFiles.push(f));
+  renderAttThumbs();
+}
+document.getElementById('attFileInput').addEventListener('change', (e)=>{
+  if(e.target.files.length) addAttFiles(e.target.files);
+  e.target.value = '';
+});
+document.getElementById('attLibraryInput').addEventListener('change', (e)=>{
+  if(e.target.files.length) addAttFiles(e.target.files);
+  e.target.value = '';
+});
+function renderAttThumbs(){
+  const frame = document.getElementById('attCamFrame');
+  const row = document.getElementById('attThumbs');
+  if(state.attFiles.length){
+    const url = URL.createObjectURL(state.attFiles[state.attFiles.length-1]);
+    frame.innerHTML = `<img src="${url}"><div class="scan-line" id="scanLine"></div>`;
+    anime({targets:'#scanLine', translateY:[0, frame.clientHeight], duration:1400, easing:'easeInOutSine', loop:true});
+  }
+  row.innerHTML = state.attFiles.map((f,i)=>`<img src="${URL.createObjectURL(f)}" onclick="removeAttFile(${i})">`).join('');
+  document.getElementById('attSubmitBtn').disabled = state.attFiles.length === 0;
+}
+function removeAttFile(i){ state.attFiles.splice(i,1); renderAttThumbs(); }
 
-            if (capturedFiles.length < 2) {
-                status.textContent = 'Please snap at least 2 clear photos of the worker.';
-                status.className = 'bg-rose-900/50 text-rose-300 border border-rose-700 text-center text-xs font-medium p-3 rounded-lg';
-                return;
-            }
+async function submitAttendance(){
+  const name = document.getElementById('supervisorName').value.trim();
+  const session = document.querySelector('#screen-attendance .segmented button.active').dataset.session;
+  const statusEl = document.getElementById('attStatus');
+  statusEl.className = 'status-msg'; statusEl.textContent = '';
+  if(!name){ statusEl.className='status-msg error'; statusEl.textContent='Enter your name first.'; return; }
+  if(!state.attFiles.length){ statusEl.className='status-msg error'; statusEl.textContent='Capture or choose at least one photo first.'; return; }
+  const btn = document.getElementById('attSubmitBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
+  const batchId = 'mobile_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  const dateStr = new Date().toISOString().slice(0,10);
+  let facesTotal = 0, matchedTotal = 0, errCount = 0;
+  try{
+    for(const file of state.attFiles){
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('username', name);
+      fd.append('session', session);
+      fd.append('timestamp', String(Date.now()));
+      fd.append('date', dateStr);
+      fd.append('batch_id', batchId);
+      try{
+        const res = await api('/api/upload-photo', {method:'POST', body:fd});
+        facesTotal += res.faces_detected || 0;
+        matchedTotal += (res.matched||[]).length;
+      }catch(err){ errCount++; }
+    }
+    document.getElementById('successTitle').textContent = errCount ? 'Attendance partially recorded' : 'Attendance recorded';
+    document.getElementById('successSub').textContent =
+      `Detected ${facesTotal} face(s), matched ${matchedTotal} worker(s) for the ${session} session${errCount ? ` — ${errCount} photo(s) failed` : ''}.`;
+    goTo('success');
+    if(successOrbInstance) setTimeout(()=>successOrbInstance.explode(), 200);
+    resetAttendanceForm();
+  }catch(e){
+    statusEl.className = 'status-msg error'; statusEl.textContent = e.message;
+  }finally{
+    btn.disabled = false; btn.innerHTML = 'Upload &amp; process';
+  }
+}
+function resetAttendanceForm(){
+  state.attFiles = [];
+  document.getElementById('attFileInput').value = '';
+  document.getElementById('attLibraryInput').value = '';
+  document.getElementById('attThumbs').innerHTML = '';
+  document.getElementById('attCamFrame').innerHTML = '<div class="cam-placeholder"><i class="fa-solid fa-camera"></i><p>Tap to capture or choose crew photo(s)</p></div>';
+  document.getElementById('attSubmitBtn').disabled = true;
+}
+/* ============================================================
+   ENROLLMENT FLOW
+   ============================================================ */
+function goToStep2(){
+  const name = document.getElementById('enrollName').value.trim();
+  if(!name) return;
+  goTo('enroll-2');
+}
+document.getElementById('enrollFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  state.enrollPhotos.push({file, url});
+  renderEnrollThumbs();
+  document.getElementById('enrollFileInput').value = '';
+});
+document.getElementById('enrollLibraryInput').addEventListener('change', (e)=>{
+  Array.from(e.target.files).forEach(file=>{
+    state.enrollPhotos.push({file, url: URL.createObjectURL(file)});
+  });
+  renderEnrollThumbs();
+  e.target.value = '';
+});
+function renderEnrollThumbs(){
+  const row = document.getElementById('enrollThumbs');
+  row.innerHTML = state.enrollPhotos.map((p,i)=>`<img src="${p.url}" onclick="removeEnrollPhoto(${i})">`).join('');
+  document.getElementById('enrollStep2Next').disabled = state.enrollPhotos.length < 2;
+  anime({targets: row.children, scale:[0.8,1], opacity:[0,1], duration:300, easing:'easeOutCubic'});
+}
+function removeEnrollPhoto(i){ state.enrollPhotos.splice(i,1); renderEnrollThumbs(); }
 
-            btn.disabled = true;
-            btn.textContent = 'Extracting face features...';
-            status.className = 'hidden';
+function prepareReview(){
+  document.getElementById('reviewName').textContent = document.getElementById('enrollName').value.trim();
+  document.getElementById('reviewThumbs').innerHTML = state.enrollPhotos.map(p=>`<img src="${p.url}">`).join('');
+}
 
-            const formData = new FormData();
-            formData.append('name', document.getElementById('workerName').value);
-            
-            for (let f of capturedFiles) {
-                formData.append('photos', f);
-            }
-
-            try {
-                const res = await fetch('/api/workers', { method: 'POST', body: formData });
-                const text = await res.text();
-                let data = {};
-                try { data = JSON.parse(text); } catch (_) {}
-
-                if (res.ok) {
-                    status.textContent = `Worker "${data.name}" enrolled successfully!`;
-                    status.className = 'bg-emerald-900/50 text-emerald-300 border border-emerald-700 text-center text-xs font-medium p-3 rounded-lg';
-                    document.getElementById('enrollForm').reset();
-                    capturedFiles = [];
-                    renderThumbnails();
-                } else {
-                    throw new Error(data.detail || text || 'Enrollment failed');
-                }
-            } catch (err) {
-                status.textContent = err.message;
-                status.className = 'bg-rose-900/50 text-rose-300 border border-rose-700 text-center text-xs font-medium p-3 rounded-lg';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Register New Worker';
-            }
-        }
-    </script>
+async function submitEnrollment(){
+  const name = document.getElementById('enrollName').value.trim();
+  const statusEl = document.getElementById('enrollStatus');
+  statusEl.className = 'status-msg'; statusEl.textContent = '';
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
+  const fd = new FormData();
+  fd.append('name', name);
+  state.enrollPhotos.forEach(p=>fd.append('photos', p.file));
+  try{
+    await api('/api/workers', {method:'POST', body:fd});
+    document.getElementById('successTitle').textContent = 'Worker registered';
+    document.getElementById('successSub').textContent = `${name} has been added to the roster.`;
+    goTo('success');
+    if(successOrbInstance) setTimeout(()=>successOrbInstance.explode(), 200);
+    state.enrollPhotos = [];
+    document.getElementById('enrollName').value = '';
+    document.getElementById('enrollThumbs').innerHTML = '';
+  }catch(e){
+    statusEl.className = 'status-msg error'; statusEl.textContent = e.message;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Register worker';
+  }
+}
+</script>
 </body>
 </html>

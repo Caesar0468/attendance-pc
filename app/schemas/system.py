@@ -13,6 +13,12 @@ class ServerInfoOut(BaseModel):
     port: int
     pair_url: str
     app_url: str
+    # BUGFIX: /server-info and /qr-code used to each mint their own pairing
+    # token independently, so the URL text shown to the user and the QR
+    # code image scanned by the phone carried two DIFFERENT tokens. This
+    # field lets the frontend pass the already-minted token straight to
+    # /qr-code so both always agree.
+    pair_token: str
 
 
 class ShutdownOut(BaseModel):

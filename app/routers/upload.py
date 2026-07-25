@@ -1,24 +1,13 @@
+# app/routers/upload.py
 from __future__ import annotations
 
-import sqlite3
-from datetime import date as date_type
-
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-
-from app.core.exceptions import BaseAppException
-from app.database import get_db
-from app.face_service import FaceService
-from app.repositories.attendance_repository import AttendanceRepository
-from app.repositories.worker_repository import WorkerRepository
-from app.schemas import PhotoUploadOut
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from app.services.attendance_service import AttendanceService
-from app.services.storage_service import StorageService
-from app.ws_manager import manager
+from app.schemas.upload import PhotoUploadOut
+from app.dependencies import get_attendance_service
+from app.core.auth import require_pairing_or_user
 
-router = APIRouter(tags=["upload"])
-
-VALID_SESSIONS = {"morning", "evening"}
-
+router = APIRouter(prefix="/api", tags=["Upload"])
 
 @router.post("/upload-photo", response_model=PhotoUploadOut)
 async def upload_photo(
@@ -26,58 +15,26 @@ async def upload_photo(
     username: str = Form(...),
     session: str = Form(...),
     timestamp: str = Form(...),
-    photo_date: str | None = Form(default=None, alias="date"),
-    db: sqlite3.Connection = Depends(get_db),
+    date: str = Form(...),
+    batch_id: str = Form(None),  # Optional Batch ID for Deduplication
+    service: AttendanceService = Depends(get_attendance_service),
+    # BUGFIX: this endpoint had no auth dependency at all — anyone on the
+    # LAN could POST attendance photos as any username, or flood the queue.
+    # It now requires either a dashboard login or a short-lived pairing
+    # token (minted only via the logged-in Pair Mobile QR flow).
+    user: dict = Depends(require_pairing_or_user),
 ):
-    attendance_date = photo_date or date_type.today().isoformat()
-
-    try:
-        date_type.fromisoformat(attendance_date)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid date format.") from e
-
-    clean_username = username.strip()
-    if not clean_username:
-        raise HTTPException(status_code=400, detail="Username is required.")
-
-    clean_session = session.strip().lower()
-    if clean_session not in VALID_SESSIONS:
-        raise HTTPException(
-            status_code=400, detail="Session must be 'morning' or 'evening'."
-        )
-
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Please upload an image file.")
-
-    data = await file.read()
-    if not data:
-        raise HTTPException(status_code=400, detail="The uploaded file was empty.")
-
-    storage = StorageService()
-    face_svc = FaceService.get()
-    attendance_repo = AttendanceRepository(db)
-    worker_repo = WorkerRepository(db)
-
-    service = AttendanceService(
-        storage, face_svc, attendance_repo, worker_repo, manager
-    )
+    image_bytes = await file.read()
 
     try:
         result = await service.process_attendance_photo(
-            image_bytes=data,
-            username=clean_username,
-            session=clean_session,
-            timestamp=timestamp.strip(),
-            photo_date=attendance_date,
+            image_bytes=image_bytes,
+            username=username,
+            session=session,
+            timestamp=timestamp,
+            photo_date=date,
+            batch_id=batch_id
         )
-    except BaseAppException as e:
-        raise HTTPException(status_code=getattr(e, "status_code", 400), detail=e.detail) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        return result
     except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail="Could not process that photo. Please try again.",
-        ) from e
-
-    return result
+        raise HTTPException(status_code=400, detail=str(e))
